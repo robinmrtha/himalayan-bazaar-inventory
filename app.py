@@ -18,8 +18,8 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def safe_int(val):
         if isinstance(val, dict): return 0
-                try: return int(val or 0)
-                        except: return 0
+        try: return int(val or 0)
+        except: return 0
 
 @app.route("/")
 def index():
