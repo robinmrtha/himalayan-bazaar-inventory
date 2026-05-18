@@ -167,7 +167,6 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
     <div class=fg><label>Status</label><select id=fStatus onchange=applyFilters()><option value="">All Statuses</option><option>Active</option><option>Inactive</option><option>Stranded</option></select></div>
     <div class=fg><label>NARF</label><select id=fNarf onchange=applyFilters()><option value="">All</option><option value=narf>NARF only</option><option value=local>Non-NARF only</option></select></div>
     <div class=fg><label>Condition</label><select id=fCondition onchange=applyFilters()><option value="">All Conditions</option><option>New</option><option>NewItem</option><option>Used</option></select></div>
-    <div class=fg><label>Reorder Status</label><select id=fReorder onchange=applyFilters()><option value="">All</option><option value="reorder_now">⚠️ Reorder Now</option><option value="order_soon">🟡 Order Soon</option><option value="healthy">✅ Healthy</option><option value="out_of_stock">⚫ Out of Stock</option><option value="no_sales">📊 No Sales</option></select></div>
     <div class=fg-range><label>Fulfillable Qty</label><div class=row><input type=number id=fFulMin placeholder=Min oninput=applyFilters() min=0><span style=color:#aaa>-</span><input type=number id=fFulMax placeholder=Max oninput=applyFilters() min=0></div></div>
     <div class=fg-range><label>Price (USD)</label><div class=row><input type=number id=fPriceMin placeholder=Min oninput=applyFilters() min=0 step=0.01><span style=color:#aaa>-</span><input type=number id=fPriceMax placeholder=Max oninput=applyFilters() min=0 step=0.01></div></div>
     <div class=fg-range><label>AWD Qty</label><div class=row><input type=number id=fAwdMin placeholder=Min oninput=applyFilters() min=0><span style=color:#aaa>-</span><input type=number id=fAwdMax placeholder=Max oninput=applyFilters() min=0></div></div>
@@ -191,8 +190,6 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
   <button onclick="quickFilter(this,'narf')">&#128260; NARF Only</button>
   <button onclick="quickFilter(this,'stranded')">&#10060; Stranded</button>
   <button onclick="quickFilter(this,'hasstock')">&#128230; Has Stock</button>
-  <button onclick="quickFilter(this,'reorder_now')">⚠️ Reorder Now</button>
-  <button onclick="quickFilter(this,'order_soon')">🟡 Order Soon</button>
   <button class=btn-clear onclick=clearFilters()>&#10005; Clear All</button>
 </div>
 
@@ -232,7 +229,7 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
       <th data-col=21 onclick="sortBy(21)">Reorder</th>
     </tr></thead>
     <tbody id=invBody></tbody>
-  没人
+  </table>
 </div>
 <script>
 var allRows=[], sortCol=-1, sortAsc=true, activeQuick=null;
@@ -453,7 +450,6 @@ function applyFilters(){
   var status=document.getElementById('fStatus').value.toLowerCase();
   var narf=document.getElementById('fNarf').value;
   var condition=document.getElementById('fCondition').value.toLowerCase();
-  var reorder=document.getElementById('fReorder').value;
   var fulMin=document.getElementById('fFulMin').value;
   var fulMax=document.getElementById('fFulMax').value;
   var priceMin=document.getElementById('fPriceMin').value;
@@ -467,4 +463,214 @@ function applyFilters(){
     if(narf==='narf'&&!r.is_narf) return false;
     if(narf==='local'&&r.is_narf) return false;
     if(condition&&(r.condition||'').toLowerCase()!==condition) return false;
-    if(reorder&&(r.reorder_status||
+    var ful=si(r.fulfillable);
+    if(fulMin!==''&&ful<parseInt(fulMin)) return false;
+    if(fulMax!==''&&ful>parseInt(fulMax)) return false;
+    var price=sf(r.price);
+    if(priceMin!==''&&price<parseFloat(priceMin)) return false;
+    if(priceMax!==''&&price>parseFloat(priceMax)) return false;
+    var awd=si(r.awd_quantity);
+    if(awdMin!==''&&awd<parseInt(awdMin)) return false;
+    if(awdMax!==''&&awd>parseInt(awdMax)) return false;
+    if(awdOnly==='yes'&&awd<=0) return false;
+    if(awdOnly==='no'&&awd>0) return false;
+    if(search){
+      var hay=((r.seller_sku||'')+' '+(r.asin||'')+' '+(r.product_name||'')).toLowerCase();
+      if(hay.indexOf(search)<0) return false;
+    }
+    return true;
+  });
+  if(sortCol>=0){
+    filtered.sort(function(a,b){
+      var aa=rowToArr(a,0)[sortCol],bb=rowToArr(b,0)[sortCol];
+      if(aa<bb) return sortAsc?-1:1;
+      if(aa>bb) return sortAsc?1:-1;
+      return 0;
+    });
+  }
+  renderTable(filtered);
+}
+function sortBy(col){
+  if(sortCol===col) sortAsc=!sortAsc; else{sortCol=col;sortAsc=true;}
+  applyFilters();
+}
+function quickFilter(btn,type){
+  clearFilters(false);
+  if(activeQuick===type){activeQuick=null;document.querySelectorAll('.quick-btns button').forEach(function(b){b.classList.remove('active')});applyFilters();return;}
+  activeQuick=type;
+  document.querySelectorAll('.quick-btns button').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  if(type==='outofstock'){document.getElementById('fFulMin').value=0;document.getElementById('fFulMax').value=0;}
+  else if(type==='lowstock'){document.getElementById('fFulMin').value=1;document.getElementById('fFulMax').value=9;}
+  else if(type==='narf'){document.getElementById('fNarf').value='narf';}
+  else if(type==='stranded'){document.getElementById('fStatus').value='Stranded';}
+  else if(type==='hasstock'){document.getElementById('fFulMin').value=1;}
+  applyFilters();
+}
+function clearFilters(resetQuick){
+  if(resetQuick===undefined) resetQuick=true;
+  ['fSearch','fFulMin','fFulMax','fPriceMin','fPriceMax','fAwdMin','fAwdMax'].forEach(function(id){document.getElementById(id).value='';});
+  ['fStatus','fNarf','fCondition','fAwdOnly'].forEach(function(id){document.getElementById(id).value='';});
+  clearMarkets();
+  if(resetQuick){activeQuick=null;document.querySelectorAll('.quick-btns button').forEach(function(b){b.classList.remove('active')});}
+  applyFilters();
+}
+
+// ---- Default View ----
+function getCurrentState(){
+  return {
+    markets:getSelectedMarkets(),
+    status:document.getElementById('fStatus').value,
+    narf:document.getElementById('fNarf').value,
+    condition:document.getElementById('fCondition').value,
+    search:document.getElementById('fSearch').value,
+    fulMin:document.getElementById('fFulMin').value,
+    fulMax:document.getElementById('fFulMax').value,
+    priceMin:document.getElementById('fPriceMin').value,
+    priceMax:document.getElementById('fPriceMax').value,
+    awdMin:document.getElementById('fAwdMin').value,
+    awdMax:document.getElementById('fAwdMax').value,
+    awdOnly:document.getElementById('fAwdOnly').value,
+    cols:COLS.map(function(c){return c.visible;})
+  };
+}
+function setDefaultView(){
+  var state=getCurrentState();
+  localStorage.setItem('hbz_default',JSON.stringify(state));
+  var btn=document.getElementById('btnSetDefault');
+  btn.classList.add('active');
+  btn.textContent='★ Default Saved!';
+  setTimeout(function(){btn.textContent='★ Set as Default';},2000);
+}
+function clearDefaultView(){
+  localStorage.removeItem('hbz_default');
+  var btn=document.getElementById('btnSetDefault');
+  btn.classList.remove('active');
+}
+function applyDefaultView(){
+  var raw=localStorage.getItem('hbz_default');
+  if(!raw) return;
+  try{
+    var s=JSON.parse(raw);
+    setMarketCheckboxes(s.markets||[]);
+    document.getElementById('fStatus').value=s.status||'';
+    document.getElementById('fNarf').value=s.narf||'';
+    document.getElementById('fCondition').value=s.condition||'';
+    document.getElementById('fSearch').value=s.search||'';
+    document.getElementById('fFulMin').value=s.fulMin||'';
+    document.getElementById('fFulMax').value=s.fulMax||'';
+    document.getElementById('fPriceMin').value=s.priceMin||'';
+    document.getElementById('fPriceMax').value=s.priceMax||'';
+    document.getElementById('fAwdMin').value=s.awdMin||'';
+    document.getElementById('fAwdMax').value=s.awdMax||'';
+    document.getElementById('fAwdOnly').value=s.awdOnly||'';
+    if(s.cols) s.cols.forEach(function(v,i){if(COLS[i])COLS[i].visible=v;});
+    document.getElementById('btnSetDefault').classList.add('active');
+  }catch(e){}
+}
+
+// ---- Saved Views (server) ----
+async function loadViews(){
+  var res=await fetch('/api/views');
+  var views=await res.json();
+  var container=document.getElementById('viewButtons');
+  container.innerHTML='';
+  views.forEach(function(v){
+    var btn=document.createElement('button');
+    btn.className='btn-view';btn.textContent=v.name;
+    btn.onclick=function(){loadView(v);};
+    var del=document.createElement('button');
+    del.className='btn-del';del.textContent='x';
+    del.onclick=function(){deleteView(v.name);};
+    container.appendChild(btn);container.appendChild(del);
+  });
+}
+function loadView(v){
+  var f=v.filters||{};
+  document.getElementById('fSearch').value=f.search||'';
+  setMarketCheckboxes(f.markets||[]);
+  document.getElementById('fStatus').value=f.status||'';
+  document.getElementById('fNarf').value=f.narf||'';
+  document.getElementById('fCondition').value=f.condition||'';
+  document.getElementById('fFulMin').value=f.fulMin||'';
+  document.getElementById('fFulMax').value=f.fulMax||'';
+  document.getElementById('fPriceMin').value=f.priceMin||'';
+  document.getElementById('fPriceMax').value=f.priceMax||'';
+  document.getElementById('fAwdMin').value=f.awdMin||'';
+  document.getElementById('fAwdMax').value=f.awdMax||'';
+  document.getElementById('fAwdOnly').value=f.awdOnly||'';
+  if(f.cols) f.cols.forEach(function(v,i){if(COLS[i])COLS[i].visible=v;});
+  buildColToggles();
+  applyFilters();
+}
+async function saveView(){
+  var name=document.getElementById('viewName').value.trim();
+  if(!name){alert('Enter a view name first');return;}
+  var filters=getCurrentState();
+  await fetch('/api/views',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,filters:filters})});
+  document.getElementById('viewName').value='';
+  loadViews();
+}
+async function deleteView(name){
+  if(!confirm('Delete view: '+name+'?')) return;
+  await fetch('/api/views/'+encodeURIComponent(name),{method:'DELETE'});
+  loadViews();
+}
+
+// ---- Load inventory ----
+// ---- Sync ----
+var _syncPoll=null;
+async function checkSyncStatus(){
+  try{
+    var r=await fetch('/api/sync-status');
+    var s=await r.json();
+    var info=document.getElementById('syncInfo');
+    var btn=document.getElementById('btnSync');
+    if(s.running){
+      info.className='sync-info running';
+      info.innerHTML='<span class=spin>&#9696;</span> Syncing...';
+      btn.disabled=true;btn.textContent='Syncing...';
+      if(!_syncPoll)_syncPoll=setInterval(checkSyncStatus,5000);
+    }else{
+      if(_syncPoll){clearInterval(_syncPoll);_syncPoll=null;}
+      btn.disabled=false;btn.innerHTML='&#128257; Sync Now';
+      info.className='sync-info';
+      if(s.last_error){info.innerHTML='&#10060; '+s.last_error.substring(0,60);}
+      else if(s.last_finished){info.textContent='Last synced: '+new Date(s.last_finished).toLocaleString();loadInventory();}
+    }
+  }catch(e){}
+}
+async function triggerSync(){
+  var btn=document.getElementById('btnSync');
+  btn.disabled=true;btn.textContent='Starting...';
+  try{
+    var r=await fetch('/api/sync-now',{method:'POST'});
+    var j=await r.json();
+    if(j.ok){if(!_syncPoll)_syncPoll=setInterval(checkSyncStatus,5000);checkSyncStatus();}
+    else{alert(j.msg);btn.disabled=false;btn.innerHTML='&#128257; Sync Now';}
+  }catch(e){alert('Could not start sync');btn.disabled=false;btn.innerHTML='&#128257; Sync Now';}
+}
+async function loadInventory(){
+  var res=await fetch('/api/inventory');
+  var data=await res.json();
+  allRows=data.rows||[];
+  var s=data.stats||{};
+  document.getElementById('sTotalSkus').textContent=(s.total_skus||0).toLocaleString();
+  document.getElementById('sFulfillable').textContent=(s.total_fulfillable||0).toLocaleString();
+  document.getElementById('sInbound').textContent=(s.total_inbound||0).toLocaleString();
+  document.getElementById('sUnfulfillable').textContent=(s.total_unfulfillable||0).toLocaleString();
+  if(allRows.length>0&&allRows[0].synced_at){
+    var si=document.getElementById('syncInfo');if(si&&!si.textContent.includes('synced'))si.textContent='Last synced: '+new Date(allRows[0].synced_at).toLocaleString();
+  }
+  document.getElementById('loading').style.display='none';
+  document.getElementById('invTable').style.display='table';
+  applyDefaultView();
+  buildColToggles();
+  applyFilters();
+}
+loadInventory();
+loadViews();
+checkSyncStatus();
+</script>
+</body>
+</html>
