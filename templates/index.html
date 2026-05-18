@@ -6,17 +6,18 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#f4f4f4;color:#333}
-header{background:#1a1a2e;color:white;padding:12px 24px;display:flex;justify-content:space-between;align-items:center}
+header{background:#1a1a2e;color:white;padding:12px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.1)}
+header h1{font-size:1.2rem;color:white;margin:0}
 .header-right{display:flex;align-items:center;gap:12px}
-.sync-info{font-size:0.78rem;opacity:0.75;white-space:nowrap}
-.sync-info.running{opacity:1;color:#fbbf24}
-.btn-sync{padding:6px 14px;border:1px solid rgba(255,255,255,0.4);border-radius:6px;background:rgba(255,255,255,0.1);color:white;cursor:pointer;font-size:0.82rem;white-space:nowrap;transition:all 0.2s}
-.btn-sync:hover{background:rgba(255,255,255,0.2);border-color:white}
+.sync-info{font-size:0.78rem;color:#a0aec0;white-space:nowrap}
+.sync-info.running{color:#fbbf24}
+.btn-sync{padding:6px 14px;border:1px solid rgba(255,255,255,0.3);border-radius:6px;background:rgba(255,255,255,0.1);color:white;cursor:pointer;font-size:0.82rem;white-space:nowrap;transition:all 0.2s}
+.btn-sync:hover{background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.5)}
+.btn-logout{padding:6px 14px;border:none;border-radius:6px;background:#dc2626;color:white;cursor:pointer;font-size:0.82rem;white-space:nowrap;text-decoration:none;display:inline-block;transition:all 0.2s}
+.btn-logout:hover{background:#b91c1c;transform:translateY(-1px)}
 .btn-sync:disabled{opacity:0.5;cursor:not-allowed}
 .spin{display:inline-block;animation:spin 1s linear infinite}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-header h1{font-size:1.2rem}
-header span{font-size:0.8rem;opacity:0.7}
 .stats{display:flex;gap:16px;padding:16px 24px}
 .stat-card{background:white;border-radius:8px;padding:16px 24px;flex:1;box-shadow:0 1px 4px rgba(0,0,0,0.1)}
 .stat-card .label{font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:0.05em}
@@ -33,7 +34,6 @@ header span{font-size:0.8rem;opacity:0.7}
 .fg-range label{font-size:0.75rem;color:#555;font-weight:bold}
 .fg-range .row{display:flex;align-items:center;gap:4px}
 .fg-range input{width:70px;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;height:32px}
-/* Market multi-select dropdown */
 .msd-wrap{display:flex;flex-direction:column;gap:4px;position:relative}
 .msd-wrap label.msd-lbl{font-size:0.75rem;color:#555;font-weight:bold}
 .msd-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;height:32px;background:white;cursor:pointer;min-width:160px;user-select:none;white-space:nowrap}
@@ -54,7 +54,6 @@ header span{font-size:0.8rem;opacity:0.7}
 .msd-footer{padding:6px 14px 2px;display:flex;gap:8px}
 .msd-footer button{font-size:0.78rem;padding:3px 8px;border:1px solid #ddd;border-radius:4px;background:white;cursor:pointer;color:#555}
 .msd-footer button:hover{background:#f0f4ff;border-color:#1a1a2e;color:#1a1a2e}
-/* Column toggle panel */
 .col-panel{background:white;margin:0 24px 12px;border-radius:8px;padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
 .col-panel-header{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
 .col-panel-header h3{font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.05em}
@@ -65,13 +64,11 @@ header span{font-size:0.8rem;opacity:0.7}
 .col-toggle:hover{background:#f0f4ff}
 .col-toggle.hidden{background:#f3f4f6;color:#aaa;border-color:#e5e7eb}
 .col-toggle input[type=checkbox]{accent-color:#1a1a2e;width:13px;height:13px}
-/* Quick buttons */
 .quick-btns{display:flex;gap:8px;flex-wrap:wrap;padding:0 24px 12px;align-items:center}
 .quick-btns button{padding:6px 14px;border:1px solid #ddd;border-radius:20px;background:white;cursor:pointer;font-size:0.82rem}
 .quick-btns button:hover,.quick-btns button.active{background:#1a1a2e;color:white;border-color:#1a1a2e}
 .btn-clear{padding:6px 14px;border:1px solid #e00;border-radius:20px;background:white;color:#e00;cursor:pointer;font-size:0.82rem}
 .btn-clear:hover{background:#e00;color:white}
-/* Views bar */
 .views-bar{display:flex;gap:8px;padding:0 24px 12px;align-items:center;flex-wrap:wrap}
 .views-bar input{padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;width:150px}
 .btn-save{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;background:#1a1a2e;color:white}
@@ -103,12 +100,15 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
 </style>
 </head>
 <body>
-<div class=header-right>
-    <span class=sync-info id=syncInfo>Checking...</span>
-    <button class=btn-sync id=btnSync onclick=triggerSync()>&#128257; Sync Now</button>
-    <a href="/logout" class="btn-sync" style="text-decoration: none; margin-left: 8px;">🚪 Logout</a>
-</div>
+<header>
+  <h1>🏔️ Himalayan Bazaar - Inventory Dashboard</h1>
+  <div class="header-right">
+    <span class="sync-info" id="syncInfo">📡 Checking...</span>
+    <button class="btn-sync" id="btnSync" onclick="triggerSync()">🔄 Sync Now</button>
+    <a href="/logout" class="btn-logout">🚪 Logout</a>
+  </div>
 </header>
+
 <div class=stats>
   <div class=stat-card><div class=label>Total SKUs</div><div class=value id=sTotalSkus>-</div></div>
   <div class=stat-card><div class=label>Fulfillable</div><div class=value id=sFulfillable>-</div></div>
@@ -123,7 +123,7 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
     <div class=msd-wrap>
       <label class=msd-lbl>Market</label>
       <div class=msd-btn id=msdBtn onclick=toggleMsd()>
-        <span id=msdLabel>All Markets</span><span class=arr>&#9660;</span>
+        <span id=msdLabel>All Markets</span><span class=arr>▼</span>
       </div>
       <div class=msd-dropdown id=msdDropdown>
         <div class=msd-region>
@@ -167,9 +167,9 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
     <div class=fg><label>NARF</label><select id=fNarf onchange=applyFilters()><option value="">All</option><option value=narf>NARF only</option><option value=local>Non-NARF only</option></select></div>
     <div class=fg><label>Condition</label><select id=fCondition onchange=applyFilters()><option value="">All Conditions</option><option>New</option><option>NewItem</option><option>Used</option></select></div>
     <div class=fg><label>Reorder Status</label><select id=fReorder onchange=applyFilters()><option value="">All</option><option value="reorder_now">Reorder Now</option><option value="order_soon">Order Soon</option><option value="healthy">Healthy</option><option value="out_of_stock">Out of Stock</option><option value="no_sales">No Sales</option></select></div>
-    <div class=fg-range><label>Fulfillable Qty</label><div class=row><input type=number id=fFulMin placeholder=Min oninput=applyFilters() min=0><span style=color:#aaa>-</span><input type=number id=fFulMax placeholder=Max oninput=applyFilters() min=0></div></div>
-    <div class=fg-range><label>Price (USD)</label><div class=row><input type=number id=fPriceMin placeholder=Min oninput=applyFilters() min=0 step=0.01><span style=color:#aaa>-</span><input type=number id=fPriceMax placeholder=Max oninput=applyFilters() min=0 step=0.01></div></div>
-    <div class=fg-range><label>AWD Qty</label><div class=row><input type=number id=fAwdMin placeholder=Min oninput=applyFilters() min=0><span style=color:#aaa>-</span><input type=number id=fAwdMax placeholder=Max oninput=applyFilters() min=0></div></div>
+    <div class=fg-range><label>Fulfillable Qty</label><div class=row><input type=number id=fFulMin placeholder=Min oninput=applyFilters() min=0><span>-</span><input type=number id=fFulMax placeholder=Max oninput=applyFilters() min=0></div></div>
+    <div class=fg-range><label>Price (USD)</label><div class=row><input type=number id=fPriceMin placeholder=Min oninput=applyFilters() min=0 step=0.01><span>-</span><input type=number id=fPriceMax placeholder=Max oninput=applyFilters() min=0 step=0.01></div></div>
+    <div class=fg-range><label>AWD Qty</label><div class=row><input type=number id=fAwdMin placeholder=Min oninput=applyFilters() min=0><span>-</span><input type=number id=fAwdMax placeholder=Max oninput=applyFilters() min=0></div></div>
     <div class=fg><label>In AWD</label><select id=fAwdOnly onchange=applyFilters()><option value="">All</option><option value=yes>AWD SKUs only</option><option value=no>No AWD</option></select></div>
   </div>
 </div>
@@ -184,9 +184,9 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
 </div>
 
 <div class=quick-btns>
-  <strong style=font-size:0.82rem;color:#555>Quick:</strong>
+  <strong>Quick:</strong>
   <button onclick="quickFilter(this,'outofstock')">Out of Stock</button>
-  <button onclick="quickFilter(this,'lowstock')">Low Stock (<10)</button>
+  <button onclick="quickFilter(this,'lowstock')">Low Stock (&lt;10)</button>
   <button onclick="quickFilter(this,'narf')">NARF Only</button>
   <button onclick="quickFilter(this,'stranded')">Stranded</button>
   <button onclick="quickFilter(this,'hasstock')">Has Stock</button>
@@ -196,7 +196,7 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
 </div>
 
 <div class=views-bar>
-  <strong style=font-size:0.85rem;color:#555>Saved Views:</strong>
+  <strong>Saved Views:</strong>
   <input id=viewName placeholder="View name...">
   <button class=btn-save onclick=saveView()>Save View</button>
   <button class=btn-default id=btnSetDefault onclick=setDefaultView()>Set as Default</button>
@@ -231,11 +231,11 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
       <th data-col=21 onclick="sortBy(21)">Reorder</th>
     </tr></thead>
     <tbody id=invBody></tbody>
-   </table>
+  </table>
 </div>
+
 <script>
 var allRows=[], sortCol=-1, sortAsc=true, activeQuick=null;
-// Column visibility: array of {col, name, visible}
 var COLS=[
   {col:0,name:'#',visible:true},
   {col:1,name:'Market',visible:true},
@@ -269,6 +269,7 @@ function statusBadge(s){
   var cls=sl==='active'?'b-active':sl==='inactive'?'b-inactive':sl.indexOf('stranded')>=0?'b-stranded':'b-unknown';
   return '<span class="b '+cls+'">'+s+'</span>';
 }
+
 function reorderBadge(s){
   var map={
     'reorder_now':  ['#fee2e2','#dc2626','Reorder Now'],
@@ -280,12 +281,14 @@ function reorderBadge(s){
   if(!s||!map[s]) return '';
   return '<span style="background:'+map[s][0]+';color:'+map[s][1]+';padding:2px 6px;border-radius:8px;font-size:0.72rem;font-weight:bold;white-space:nowrap">'+map[s][2]+'</span>';
 }
+
 function marketBadge(m,isNarf){
   var ml=(m||'').toUpperCase();
   var cls=ml==='US'?'b-us':ml==='CA'?'b-ca':'b-mx';
   var narf=isNarf?'<span class=b-narf>NARF</span>':'';
   return '<span class="b '+cls+'">'+ml+'</span>'+narf;
 }
+
 function rowToArr(r,i){
   var inb=si(r.inbound_working)+si(r.inbound_shipped)+si(r.inbound_receiving);
   var res=si(r.reserved_fc)+si(r.reserved_customer);
@@ -295,7 +298,6 @@ function rowToArr(r,i){
     si(r.units_sold_7d),si(r.units_sold_30d),parseFloat(r.velocity)||0,si(r.days_of_stock),r.reorder_status||''];
 }
 
-// ---- Column visibility ----
 function buildColToggles(){
   var container=document.getElementById('colToggles');
   container.innerHTML='';
@@ -306,6 +308,7 @@ function buildColToggles(){
     container.appendChild(lbl);
   });
 }
+
 function toggleColPanel(){
   var ct=document.getElementById('colToggles');
   var arrow=document.getElementById('colArrow');
@@ -313,6 +316,7 @@ function toggleColPanel(){
   ct.style.display=open?'none':'flex';
   arrow.classList.toggle('open',!open);
 }
+
 function toggleCol(idx,visible){
   COLS[idx].visible=visible;
   var lbl=document.getElementById('colToggles').children[idx];
@@ -320,6 +324,7 @@ function toggleCol(idx,visible){
   applyColVisibility();
   saveColState();
 }
+
 function applyColVisibility(){
   var ths=document.querySelectorAll('#headerRow th');
   COLS.forEach(function(c,idx){
@@ -333,19 +338,12 @@ function applyColVisibility(){
     });
   });
 }
+
 function saveColState(){
   var state=COLS.map(function(c){return c.visible;});
   localStorage.setItem('hbz_cols',JSON.stringify(state));
 }
-function loadColState(state){
-  if(!state) return;
-  try{
-    var arr=JSON.parse(state);
-    arr.forEach(function(v,i){if(COLS[i])COLS[i].visible=v;});
-  }catch(e){}
-}
 
-// ---- Market multi-select dropdown ----
 function toggleMsd(){
   var dd=document.getElementById('msdDropdown');
   var btn=document.getElementById('msdBtn');
@@ -358,6 +356,7 @@ function toggleMsd(){
     },0);
   }
 }
+
 function closeMsdOutside(e){
   var wrap=document.querySelector('.msd-wrap');
   if(!wrap.contains(e.target)){
@@ -365,10 +364,12 @@ function closeMsdOutside(e){
     document.getElementById('msdBtn').classList.remove('active');
   }
 }
+
 function onMsdChange(){
   updateMsdLabel();
   applyFilters();
 }
+
 function updateMsdLabel(){
   var sel=getSelectedMarkets();
   var lbl=document.getElementById('msdLabel');
@@ -376,18 +377,22 @@ function updateMsdLabel(){
   else if(sel.length<=3) lbl.textContent=sel.join(', ');
   else lbl.textContent=sel.length+' markets selected';
 }
+
 function selectRegion(region){
   document.querySelectorAll('#msdDropdown input[data-region='+region+']').forEach(function(cb){cb.checked=true;});
   onMsdChange();
 }
+
 function selectAllMarkets(){
   document.querySelectorAll('#msdDropdown input[type=checkbox]').forEach(function(cb){cb.checked=true;});
   onMsdChange();
 }
+
 function clearMarkets(){
   document.querySelectorAll('#msdDropdown input[type=checkbox]').forEach(function(cb){cb.checked=false;});
   onMsdChange();
 }
+
 function getSelectedMarkets(){
   var sel=[];
   document.querySelectorAll('#msdDropdown input[type=checkbox]').forEach(function(cb){
@@ -395,6 +400,7 @@ function getSelectedMarkets(){
   });
   return sel;
 }
+
 function setMarketCheckboxes(markets){
   document.querySelectorAll('#msdDropdown input[type=checkbox]').forEach(function(cb){
     cb.checked=markets.length>0&&markets.indexOf(cb.getAttribute('data-market'))>=0;
@@ -402,7 +408,6 @@ function setMarketCheckboxes(markets){
   updateMsdLabel();
 }
 
-// ---- Render ----
 function renderTable(rows){
   var tbody=document.getElementById('invBody');
   document.querySelectorAll('#headerRow th').forEach(function(h,i){
@@ -444,7 +449,6 @@ function renderTable(rows){
   applyColVisibility();
 }
 
-// ---- Filters ----
 function applyFilters(){
   var search=document.getElementById('fSearch').value.toLowerCase();
   var markets=getSelectedMarkets();
@@ -469,7 +473,7 @@ function applyFilters(){
     var ful=si(r.fulfillable);
     if(fulMin!==''&&ful<parseInt(fulMin)) return false;
     if(fulMax!==''&&ful>parseInt(fulMax)) return false;
-        var price=sf(r.price);
+    var price=sf(r.price);
     if(priceMin!==''&&price<parseFloat(priceMin)) return false;
     if(priceMax!==''&&price>parseFloat(priceMax)) return false;
     var awd=si(r.awd_quantity);
@@ -493,10 +497,12 @@ function applyFilters(){
   }
   renderTable(filtered);
 }
+
 function sortBy(col){
   if(sortCol===col) sortAsc=!sortAsc; else{sortCol=col;sortAsc=true;}
   applyFilters();
 }
+
 function quickFilter(btn,type){
   clearFilters(false);
   if(activeQuick===type){activeQuick=null;document.querySelectorAll('.quick-btns button').forEach(function(b){b.classList.remove('active')});applyFilters();return;}
@@ -512,6 +518,7 @@ function quickFilter(btn,type){
   else if(type==='order_soon'){document.getElementById('fReorder').value='order_soon';}
   applyFilters();
 }
+
 function clearFilters(resetQuick){
   if(resetQuick===undefined) resetQuick=true;
   ['fSearch','fFulMin','fFulMax','fPriceMin','fPriceMax','fAwdMin','fAwdMax'].forEach(function(id){document.getElementById(id).value='';});
@@ -521,7 +528,6 @@ function clearFilters(resetQuick){
   applyFilters();
 }
 
-// ---- Default View ----
 function getCurrentState(){
   return {
     markets:getSelectedMarkets(),
@@ -540,6 +546,7 @@ function getCurrentState(){
     cols:COLS.map(function(c){return c.visible;})
   };
 }
+
 function setDefaultView(){
   var state=getCurrentState();
   localStorage.setItem('hbz_default',JSON.stringify(state));
@@ -548,11 +555,13 @@ function setDefaultView(){
   btn.textContent='Default Saved!';
   setTimeout(function(){btn.textContent='Set as Default';},2000);
 }
+
 function clearDefaultView(){
   localStorage.removeItem('hbz_default');
   var btn=document.getElementById('btnSetDefault');
   btn.classList.remove('active');
 }
+
 function applyDefaultView(){
   var raw=localStorage.getItem('hbz_default');
   if(!raw) return;
@@ -576,7 +585,6 @@ function applyDefaultView(){
   }catch(e){}
 }
 
-// ---- Saved Views (server) ----
 async function loadViews(){
   var res=await fetch('/api/views');
   var views=await res.json();
@@ -592,6 +600,7 @@ async function loadViews(){
     container.appendChild(btn);container.appendChild(del);
   });
 }
+
 function loadView(v){
   var f=v.filters||{};
   document.getElementById('fSearch').value=f.search||'';
@@ -611,6 +620,7 @@ function loadView(v){
   buildColToggles();
   applyFilters();
 }
+
 async function saveView(){
   var name=document.getElementById('viewName').value.trim();
   if(!name){alert('Enter a view name first');return;}
@@ -619,15 +629,15 @@ async function saveView(){
   document.getElementById('viewName').value='';
   loadViews();
 }
+
 async function deleteView(name){
   if(!confirm('Delete view: '+name+'?')) return;
   await fetch('/api/views/'+encodeURIComponent(name),{method:'DELETE'});
   loadViews();
 }
 
-// ---- Load inventory ----
-// ---- Sync ----
 var _syncPoll=null;
+
 async function checkSyncStatus(){
   try{
     var r=await fetch('/api/sync-status');
@@ -636,18 +646,19 @@ async function checkSyncStatus(){
     var btn=document.getElementById('btnSync');
     if(s.running){
       info.className='sync-info running';
-      info.innerHTML='<span class=spin></span> Syncing...';
+      info.innerHTML='⏳ Syncing...';
       btn.disabled=true;btn.textContent='Syncing...';
       if(!_syncPoll)_syncPoll=setInterval(checkSyncStatus,5000);
     }else{
       if(_syncPoll){clearInterval(_syncPoll);_syncPoll=null;}
-      btn.disabled=false;btn.innerHTML='Sync Now';
+      btn.disabled=false;btn.innerHTML='🔄 Sync Now';
       info.className='sync-info';
-      if(s.last_error){info.innerHTML='Error: '+s.last_error.substring(0,60);}
-      else if(s.last_finished){info.textContent='Last synced: '+new Date(s.last_finished).toLocaleString();loadInventory();}
+      if(s.last_error){info.innerHTML='❌ '+s.last_error.substring(0,60);}
+      else if(s.last_finished){info.textContent='✅ Last synced: '+new Date(s.last_finished).toLocaleString();loadInventory();}
     }
   }catch(e){}
 }
+
 async function triggerSync(){
   var btn=document.getElementById('btnSync');
   btn.disabled=true;btn.textContent='Starting...';
@@ -655,9 +666,10 @@ async function triggerSync(){
     var r=await fetch('/api/sync-now',{method:'POST'});
     var j=await r.json();
     if(j.ok){if(!_syncPoll)_syncPoll=setInterval(checkSyncStatus,5000);checkSyncStatus();}
-    else{alert(j.msg);btn.disabled=false;btn.innerHTML='Sync Now';}
-  }catch(e){alert('Could not start sync');btn.disabled=false;btn.innerHTML='Sync Now';}
+    else{alert(j.msg);btn.disabled=false;btn.innerHTML='🔄 Sync Now';}
+  }catch(e){alert('Could not start sync');btn.disabled=false;btn.innerHTML='🔄 Sync Now';}
 }
+
 async function loadInventory(){
   var res=await fetch('/api/inventory');
   var data=await res.json();
@@ -676,6 +688,7 @@ async function loadInventory(){
   buildColToggles();
   applyFilters();
 }
+
 loadInventory();
 loadViews();
 checkSyncStatus();
