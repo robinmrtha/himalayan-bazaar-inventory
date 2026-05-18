@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<meta charset=UTF-8>
+<title>Himalayan Bazaar - Inventory</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f4f4;color:#333}
+header{background:#1a1a2e;color:white;padding:12px 24px;display:flex;justify-content:space-between;align-items:center}
+.header-right{display:flex;align-items:center;gap:12px}
+.sync-info{font-size:0.78rem;opacity:0.75;white-space:nowrap}
+.sync-info.running{opacity:1;color:#fbbf24}
+.btn-sync{padding:6px 14px;border:1px solid rgba(255,255,255,0.4);border-radius:6px;background:rgba(255,255,255,0.1);color:white;cursor:pointer;font-size:0.82rem;white-space:nowrap;transition:all 0.2s}
+.btn-sync:hover{background:rgba(255,255,255,0.2);border-color:white}
+.btn-sync:disabled{opacity:0.5;cursor:not-allowed}
+.spin{display:inline-block;animation:spin 1s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+header h1{font-size:1.2rem}
+header span{font-size:0.8rem;opacity:0.7}
+.stats{display:flex;gap:16px;padding:16px 24px}
+.stat-card{background:white;border-radius:8px;padding:16px 24px;flex:1;box-shadow:0 1px 4px rgba(0,0,0,0.1)}
+.stat-card .label{font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:0.05em}
+.stat-card .value{font-size:2rem;font-weight:bold;margin-top:4px}
+.filter-panel{background:white;margin:0 24px 12px;border-radius:8px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.filter-panel h3{font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px}
+.filter-grid{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:0.75rem;color:#555;font-weight:bold}
+.fg input,.fg select{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;height:32px}
+.fg input{width:160px}
+.fg select{width:130px}
+.fg-range{display:flex;flex-direction:column;gap:4px}
+.fg-range label{font-size:0.75rem;color:#555;font-weight:bold}
+.fg-range .row{display:flex;align-items:center;gap:4px}
+.fg-range input{width:70px;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;height:32px}
+/* Market multi-select dropdown */
+.msd-wrap{display:flex;flex-direction:column;gap:4px;position:relative}
+.msd-wrap label.msd-lbl{font-size:0.75rem;color:#555;font-weight:bold}
+.msd-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;height:32px;background:white;cursor:pointer;min-width:160px;user-select:none;white-space:nowrap}
+.msd-btn:hover{border-color:#1a1a2e}
+.msd-btn.active{border-color:#1a1a2e;background:#f0f4ff}
+.msd-btn .arr{font-size:0.65rem;color:#999;margin-left:4px}
+.msd-dropdown{display:none;position:absolute;top:100%;left:0;z-index:100;background:white;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:220px;padding:8px 0;margin-top:4px}
+.msd-dropdown.open{display:block}
+.msd-region{padding:4px 0}
+.msd-region-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 4px;font-size:0.72rem;font-weight:bold;color:#888;text-transform:uppercase;letter-spacing:0.05em}
+.msd-region-hdr .sel-all{font-size:0.72rem;font-weight:normal;color:#1a1a2e;cursor:pointer;text-transform:none;letter-spacing:0}
+.msd-region-hdr .sel-all:hover{text-decoration:underline}
+.msd-item{display:flex;align-items:center;gap:9px;padding:5px 14px 5px 20px;font-size:0.85rem;cursor:pointer;user-select:none}
+.msd-item:hover{background:#f5f7ff}
+.msd-item input[type=checkbox]{accent-color:#1a1a2e;width:14px;height:14px;cursor:pointer;flex-shrink:0}
+.msd-item span{flex:1}
+.msd-sep{height:1px;background:#f0f0f0;margin:4px 0}
+.msd-footer{padding:6px 14px 2px;display:flex;gap:8px}
+.msd-footer button{font-size:0.78rem;padding:3px 8px;border:1px solid #ddd;border-radius:4px;background:white;cursor:pointer;color:#555}
+.msd-footer button:hover{background:#f0f4ff;border-color:#1a1a2e;color:#1a1a2e}
+/* Column toggle panel */
+.col-panel{background:white;margin:0 24px 12px;border-radius:8px;padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.col-panel-header{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.col-panel-header h3{font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.05em}
+.col-panel-header .toggle-arrow{font-size:0.75rem;color:#888;transition:transform 0.2s}
+.col-panel-header .toggle-arrow.open{transform:rotate(180deg)}
+.col-toggles{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.col-toggle{display:flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid #ddd;border-radius:16px;background:white;cursor:pointer;font-size:0.8rem;user-select:none}
+.col-toggle:hover{background:#f0f4ff}
+.col-toggle.hidden{background:#f3f4f6;color:#aaa;border-color:#e5e7eb}
+.col-toggle input[type=checkbox]{accent-color:#1a1a2e;width:13px;height:13px}
+/* Quick buttons */
+.quick-btns{display:flex;gap:8px;flex-wrap:wrap;padding:0 24px 12px;align-items:center}
+.quick-btns button{padding:6px 14px;border:1px solid #ddd;border-radius:20px;background:white;cursor:pointer;font-size:0.82rem}
+.quick-btns button:hover,.quick-btns button.active{background:#1a1a2e;color:white;border-color:#1a1a2e}
+.btn-clear{padding:6px 14px;border:1px solid #e00;border-radius:20px;background:white;color:#e00;cursor:pointer;font-size:0.82rem}
+.btn-clear:hover{background:#e00;color:white}
+/* Views bar */
+.views-bar{display:flex;gap:8px;padding:0 24px 12px;align-items:center;flex-wrap:wrap}
+.views-bar input{padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;width:150px}
+.btn-save{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;background:#1a1a2e;color:white}
+.btn-default{padding:7px 14px;border:1px solid #1a1a2e;border-radius:6px;cursor:pointer;font-size:0.85rem;background:white;color:#1a1a2e}
+.btn-default.active{background:#1a1a2e;color:white}
+.btn-clear-default{padding:7px 10px;border:1px solid #e00;border-radius:6px;cursor:pointer;font-size:0.82rem;background:white;color:#e00}
+.btn-view{padding:7px 14px;border:1px solid #c5d5f5;border-radius:6px;cursor:pointer;font-size:0.85rem;background:#e8f0fe;color:#1a1a2e}
+.btn-del{padding:5px 8px;border:none;border-radius:4px;cursor:pointer;font-size:0.8rem;background:#fde8e8;color:#c00;margin-left:2px}
+.result-count{padding:0 24px 6px;font-size:0.82rem;color:#888}
+.container{padding:0 24px 24px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:white}
+thead th{background:#1a1a2e;color:white;padding:8px 10px;text-align:left;font-size:0.8rem;cursor:pointer;white-space:nowrap;position:sticky;top:0;z-index:10}
+thead th:hover{background:#2d2d5e}
+thead th.asc::after{content:" ▲"}
+thead th.desc::after{content:" ▼"}
+tbody tr:nth-child(even){background:#fafafa}
+tbody tr:hover{background:#f0f4ff}
+td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
+.b{display:inline-block;padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:bold}
+.b-us{background:#dbeafe;color:#1d4ed8}
+.b-ca{background:#fef3c7;color:#92400e}
+.b-mx{background:#d1fae5;color:#065f46}
+.b-narf{background:#fee2e2;color:#991b1b;font-size:0.65rem;padding:1px 5px;border-radius:8px;margin-left:4px}
+.b-active{background:#d1fae5;color:#065f46}
+.b-inactive{background:#f3f4f6;color:#6b7280}
+.b-stranded{background:#fee2e2;color:#991b1b}
+.b-unknown{background:#fef3c7;color:#92400e}
+#loading{text-align:center;padding:40px;color:#888}
+</style>
+</head>
+<body>
+<header>
+  <h1>Himalayan Bazaar - Inventory Dashboard</h1>
+  <div class=header-right>
+    <span class=sync-info id=syncInfo>Checking...</span>
+    <button class=btn-sync id=btnSync onclick=triggerSync()>&#128257; Sync Now</button>
+  </div>
+</header>
+<div class=stats>
+  <div class=stat-card><div class=label>Total SKUs</div><div class=value id=sTotalSkus>-</div></div>
+  <div class=stat-card><div class=label>Fulfillable</div><div class=value id=sFulfillable>-</div></div>
+  <div class=stat-card><div class=label>Inbound</div><div class=value id=sInbound>-</div></div>
+  <div class=stat-card><div class=label>Unfulfillable</div><div class=value id=sUnfulfillable>-</div></div>
+</div>
+
+<div class=filter-panel>
+  <h3>Filters</h3>
+  <div class=filter-grid>
+    <div class=fg><label>Search</label><input id=fSearch placeholder="SKU, ASIN, or name..." oninput=applyFilters()></div>
+    <div class=msd-wrap>
+      <label class=msd-lbl>Market</label>
+      <div class=msd-btn id=msdBtn onclick=toggleMsd()>
+        <span id=msdLabel>All Markets</span><span class=arr>&#9660;</span>
+      </div>
+      <div class=msd-dropdown id=msdDropdown>
+        <div class=msd-region>
+          <div class=msd-region-hdr>
+            <span>North America</span>
+            <span class=sel-all onclick="selectRegion('NA')">Select all</span>
+          </div>
+          <label class=msd-item><input type=checkbox data-market=US data-region=NA onchange=onMsdChange()><span>🇺🇸 US — United States</span></label>
+          <label class=msd-item><input type=checkbox data-market=CA data-region=NA onchange=onMsdChange()><span>🇨🇦 CA — Canada</span></label>
+          <label class=msd-item><input type=checkbox data-market=MX data-region=NA onchange=onMsdChange()><span>🇲🇽 MX — Mexico</span></label>
+        </div>
+        <div class=msd-sep></div>
+        <div class=msd-region>
+          <div class=msd-region-hdr>
+            <span>Europe</span>
+            <span class=sel-all onclick="selectRegion('EU')">Select all</span>
+          </div>
+          <label class=msd-item><input type=checkbox data-market=UK data-region=EU onchange=onMsdChange()><span>🇬🇧 UK — United Kingdom</span></label>
+          <label class=msd-item><input type=checkbox data-market=DE data-region=EU onchange=onMsdChange()><span>🇩🇪 DE — Germany</span></label>
+          <label class=msd-item><input type=checkbox data-market=FR data-region=EU onchange=onMsdChange()><span>🇫🇷 FR — France</span></label>
+          <label class=msd-item><input type=checkbox data-market=IT data-region=EU onchange=onMsdChange()><span>🇮🇹 IT — Italy</span></label>
+          <label class=msd-item><input type=checkbox data-market=ES data-region=EU onchange=onMsdChange()><span>🇪🇸 ES — Spain</span></label>
+        </div>
+        <div class=msd-sep></div>
+        <div class=msd-region>
+          <div class=msd-region-hdr>
+            <span>Asia Pacific</span>
+            <span class=sel-all onclick="selectRegion('AP')">Select all</span>
+          </div>
+          <label class=msd-item><input type=checkbox data-market=AU data-region=AP onchange=onMsdChange()><span>🇦🇺 AU — Australia</span></label>
+          <label class=msd-item><input type=checkbox data-market=JP data-region=AP onchange=onMsdChange()><span>🇯🇵 JP — Japan</span></label>
+        </div>
+        <div class=msd-sep></div>
+        <div class=msd-footer>
+          <button onclick="selectAllMarkets()">Select All</button>
+          <button onclick="clearMarkets()">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class=fg><label>Status</label><select id=fStatus onchange=applyFilters()><option value="">All Statuses</option><option>Active</option><option>Inactive</option><option>Stranded</option></select></div>
+    <div class=fg><label>NARF</label><select id=fNarf onchange=applyFilters()><option value="">All</option><option value=narf>NARF only</option><option value=local>Non-NARF only</option></select></div>
+    <div class=fg><label>Condition</label><select id=fCondition onchange=applyFilters()><option value="">All Conditions</option><option>New</option><option>NewItem</option><option>Used</option></select></div>
+    <div class=fg-range><label>Fulfillable Qty</label><div class=row><input type=number id=fFulMin placeholder=Min oninput=applyFilters() min=0><span style=color:#aaa>-</span><input type=number id=fFulMax placeholder=Max oninput=applyFilters() min=0></div></div>
+    <div class=fg-range><label>Price (USD)</label><div class=row><input type=number id=fPriceMin placeholder=Min oninput=applyFilters() min=0 step=0.01><span style=color:#aaa>-</span><input type=number id=fPriceMax placeholder=Max oninput=applyFilters() min=0 step=0.01></div></div>
+    <div class=fg-range><label>AWD Qty</label><div class=row><input type=number id=fAwdMin placeholder=Min oninput=applyFilters() min=0><span style=color:#aaa>-</span><input type=number id=fAwdMax placeholder=Max oninput=applyFilters() min=0></div></div>
+    <div class=fg><label>In AWD</label><select id=fAwdOnly onchange=applyFilters()><option value="">All</option><option value=yes>AWD SKUs only</option><option value=no>No AWD</option></select></div>
+  </div>
+</div>
+
+<div class=col-panel>
+  <div class=col-panel-header onclick=toggleColPanel()>
+    <h3>Columns</h3>
+    <span class=toggle-arrow id=colArrow>▼</span>
+    <span style="font-size:0.75rem;color:#aaa;margin-left:4px">click to show/hide</span>
+  </div>
+  <div class=col-toggles id=colToggles style=display:none></div>
+</div>
+
+<div class=quick-btns>
+  <strong style=font-size:0.82rem;color:#555>Quick:</strong>
+  <button onclick="quickFilter(this,'outofstock')">&#128308; Out of Stock</button>
+  <button onclick="quickFilter(this,'lowstock')">&#9888; Low Stock (&lt;10)</button>
+  <button onclick="quickFilter(this,'narf')">&#128260; NARF Only</button>
+  <button onclick="quickFilter(this,'stranded')">&#10060; Stranded</button>
+  <button onclick="quickFilter(this,'hasstock')">&#128230; Has Stock</button>
+  <button class=btn-clear onclick=clearFilters()>&#10005; Clear All</button>
+</div>
+
+<div class=views-bar>
+  <strong style=font-size:0.85rem;color:#555>Saved Views:</strong>
+  <input id=viewName placeholder="View name...">
+  <button class=btn-save onclick=saveView()>Save View</button>
+  <button class=btn-default id=btnSetDefault onclick=setDefaultView()>&#9733; Set as Default</button>
+  <button class=btn-clear-default onclick=clearDefaultView()>&#10005; Clear Default</button>
+  <span id=viewButtons></span>
+</div>
+<div class=result-count id=resultCount></div>
+<div class=container>
+  <div id=loading>Loading inventory...</div>
+  <table id=invTable style=display:none>
+    <thead><tr id=headerRow>
+      <th data-col=0 onclick="sortBy(0)">#</th>
+      <th data-col=1 onclick="sortBy(1)">Market</th>
+      <th data-col=2 onclick="sortBy(2)">Seller SKU</th>
+      <th data-col=3 onclick="sortBy(3)">ASIN</th>
+      <th data-col=4 onclick="sortBy(4)">Product Name</th>
+      <th data-col=5 onclick="sortBy(5)">Status</th>
+      <th data-col=6 onclick="sortBy(6)">Condition</th>
+      <th data-col=7 onclick="sortBy(7)">Fulfillable</th>
+      <th data-col=8 onclick="sortBy(8)">Inbound</th>
+      <th data-col=9 onclick="sortBy(9)">Reserved</th>
+      <th data-col=10 onclick="sortBy(10)">Unfulfillable</th>
+      <th data-col=11 onclick="sortBy(11)">Total Qty</th>
+      <th data-col=12 onclick="sortBy(12)">Price</th>
+      <th data-col=14 onclick="sortBy(14)">AWD</th>
+      <th data-col=15 onclick="sortBy(15)">AWD Inbound</th>
+      <th data-col=16 onclick="sortBy(16)">AWD Reserved</th>
+      <th data-col=17 onclick="sortBy(17)">Sold 7d</th>
+      <th data-col=18 onclick="sortBy(18)">Sold 30d</th>
+      <th data-col=19 onclick="sortBy(19)">Velocity</th>
+      <th data-col=20 onclick="sortBy(20)">Days Left</th>
+      <th data-col=21 onclick="sortBy(21)">Reorder</th>
+    </tr></thead>
+    <tbody id=invBody></tbody>
+  </table>
+</div>
+<script>
+var allRows=[], sortCol=-1, sortAsc=true, activeQuick=null;
+// Column visibility: array of {col, name, visible}
+var COLS=[
+  {col:0,name:'#',visible:true},
+  {col:1,name:'Market',visible:true},
+  {col:2,name:'Seller SKU',visible:true},
+  {col:3,name:'ASIN',visible:true},
+  {col:4,name:'Product Name',visible:true},
+  {col:5,name:'Status',visible:true},
+  {col:6,name:'Condition',visible:false},
+  {col:7,name:'Fulfillable',visible:true},
+  {col:8,name:'Inbound',visible:true},
+  {col:9,name:'Reserved',visible:true},
+  {col:10,name:'Unfulfillable',visible:false},
+  {col:11,name:'Total Qty',visible:true},
+  {col:12,name:'Price',visible:true},
+  {col:14,name:'AWD',visible:true},
+  {col:15,name:'AWD Inbound',visible:true},
+  {col:16,name:'AWD Reserved',visible:false},
+  {col:17,name:'Sold 7d',visible:true},
+  {col:18,name:'Sold 30d',visible:true},
+  {col:19,name:'Velocity',visible:true},
+  {col:20,name:'Days Left',visible:true},
+  {col:21,name:'Reorder',visible:true}
+];
+
+function si(v){return parseInt(v)||0;}
+function sf(v){return parseFloat(v)||0;}
+
+function statusBadge(s){
+  if(!s) return '';
+  var sl=s.toLowerCase();
+  var cls=sl==='active'?'b-active':sl==='inactive'?'b-inactive':sl.indexOf('stranded')>=0?'b-stranded':'b-unknown';
+  return '<span class="b '+cls+'">'+s+'</span>';
+}
+function reorderBadge(s){
+  var map={
+    'reorder_now':  ['#fee2e2','#dc2626','&#128308; Reorder Now'],
+    'order_soon':   ['#fef3c7','#d97706','&#128993; Order Soon'],
+    'healthy':      ['#dcfce7','#16a34a','&#128994; Healthy'],
+    'out_of_stock': ['#f3f4f6','#6b7280','&#9899; Out of Stock'],
+    'no_sales':     ['#f3f4f6','#9ca3af','&mdash; No Sales']
+  };
+  if(!s||!map[s]) return '';
+  return '<span style="background:'+map[s][0]+';color:'+map[s][1]+';padding:2px 6px;border-radius:8px;font-size:0.72rem;font-weight:bold;white-space:nowrap">'+map[s][2]+'</span>';
+}
+function marketBadge(m,isNarf){
+  var ml=(m||'').toUpperCase();
+  var cls=ml==='US'?'b-us':ml==='CA'?'b-ca':'b-mx';
+  var narf=isNarf?'<span class=b-narf>NARF</span>':'';
+  return '<span class="b '+cls+'">'+ml+'</span>'+narf;
+}
+function rowToArr(r,i){
+  var inb=si(r.inbound_working)+si(r.inbound_shipped)+si(r.inbound_receiving);
+  var res=si(r.reserved_fc)+si(r.reserved_customer);
+  return [i+1,r.marketplace||'',r.seller_sku||'',r.asin||'',r.product_name||'',
+    r.listing_status||'',r.condition||'',si(r.fulfillable),inb,res,
+    si(r.unfulfillable),si(r.total_quantity),sf(r.price),r.is_narf||false,si(r.awd_quantity),si(r.awd_inbound),si(r.awd_reserved),
+    si(r.units_sold_7d),si(r.units_sold_30d),parseFloat(r.velocity)||0,si(r.days_of_stock),r.reorder_status||''];
+}
+
+// ---- Column visibility ----
+function buildColToggles(){
+  var container=document.getElementById('colToggles');
+  container.innerHTML='';
+  COLS.forEach(function(c,idx){
+    var lbl=document.createElement('label');
+    lbl.className='col-toggle'+(c.visible?'':' hidden');
+    lbl.innerHTML='<input type=checkbox '+(c.visible?'checked':'')+' onchange="toggleCol('+idx+',this.checked)"> '+c.name;
+    container.appendChild(lbl);
+  });
+}
+function toggleColPanel(){
+  var ct=document.getElementById('colToggles');
+  var arrow=document.getElementById('colArrow');
+  var open=ct.style.display==='flex'||ct.style.display==='';
+  ct.style.display=open?'none':'flex';
+  arrow.classList.toggle('open',!open);
+}
+function toggleCol(idx,visible){
+  COLS[idx].visible=visible;
+  var lbl=document.getElementById('colToggles').children[idx];
+  lbl.className='col-toggle'+(visible?'':' hidden');
+  applyColVisibility();
+  saveColState();
+}
+function applyColVisibility(){
+  var ths=document.querySelectorAll('#headerRow th');
+  COLS.forEach(function(c,idx){
+    if(ths[idx]) ths[idx].style.display=c.visible?'':'none';
+  });
+  var trs=document.querySelectorAll('#invBody tr');
+  trs.forEach(function(tr){
+    var tds=tr.querySelectorAll('td');
+    COLS.forEach(function(c,idx){
+      if(tds[idx]) tds[idx].style.display=c.visible?'':'none';
+    });
+  });
+}
+function saveColState(){
+  var state=COLS.map(function(c){return c.visible;});
+  localStorage.setItem('hbz_cols',JSON.stringify(state));
+}
+function loadColState(state){
+  if(!state) return;
+  try{
+    var arr=JSON.parse(state);
+    arr.forEach(function(v,i){if(COLS[i])COLS[i].visible=v;});
+  }catch(e){}
+}
+
+// ---- Market multi-select dropdown ----
+function toggleMsd(){
+  var dd=document.getElementById('msdDropdown');
+  var btn=document.getElementById('msdBtn');
+  var open=dd.classList.contains('open');
+  dd.classList.toggle('open',!open);
+  btn.classList.toggle('active',!open);
+  if(!open){
+    // close on outside click
+    setTimeout(function(){
+      document.addEventListener('click',closeMsdOutside,{once:true});
+    },0);
+  }
+}
+function closeMsdOutside(e){
+  var wrap=document.querySelector('.msd-wrap');
+  if(!wrap.contains(e.target)){
+    document.getElementById('msdDropdown').classList.remove('open');
+    document.getElementById('msdBtn').classList.remove('active');
+  }
+}
+function onMsdChange(){
+  updateMsdLabel();
+  applyFilters();
+}
+function updateMsdLabel(){
+  var sel=getSelectedMarkets();
+  var lbl=document.getElementById('msdLabel');
+  if(sel.length===0) lbl.textContent='All Markets';
+  else if(sel.length<=3) lbl.textContent=sel.join(', ');
+  else lbl.textContent=sel.length+' markets selected';
+}
+function selectRegion(region){
+  document.querySelectorAll('#msdDropdown input[data-region='+region+']').forEach(function(cb){cb.checked=true;});
+  onMsdChange();
+}
+function selectAllMarkets(){
+  document.querySelectorAll('#msdDropdown input[type=checkbox]').forEach(function(cb){cb.checked=true;});
+  onMsdChange();
+}
+function clearMarkets(){
+  document.querySelectorAll('#msdDropdown input[type=checkbox]').forEach(function(cb){cb.checked=false;});
+  onMsdChange();
+}
+function getSelectedMarkets(){
+  var sel=[];
+  document.querySelectorAll('#msdDropdown input[type=checkbox]').forEach(function(cb){
+    if(cb.checked) sel.push(cb.getAttribute('data-market'));
+  });
+  return sel;
+}
+function setMarketCheckboxes(markets){
+  document.querySelectorAll('#msdDropdown input[type=checkbox]').forEach(function(cb){
+    cb.checked=markets.length>0&&markets.indexOf(cb.getAttribute('data-market'))>=0;
+  });
+  updateMsdLabel();
+}
+
+// ---- Render ----
+function renderTable(rows){
+  var tbody=document.getElementById('invBody');
+  document.querySelectorAll('#headerRow th').forEach(function(h,i){
+    h.classList.remove('asc','desc');
+    if(i===sortCol) h.classList.add(sortAsc?'asc':'desc');
+  });
+  tbody.innerHTML='';
+  rows.forEach(function(r,i){
+    var arr=rowToArr(r,i);
+    var isNarf=arr[13];
+    var tr=document.createElement('tr');
+    if(isNarf) tr.style.opacity='0.6';
+    var price=arr[12]>0?'$'+arr[12].toFixed(2):'';
+    tr.innerHTML=
+      '<td>'+arr[0]+'</td>'
+      +'<td>'+marketBadge(arr[1],isNarf)+'</td>'
+      +'<td>'+arr[2]+'</td>'
+      +'<td>'+arr[3]+'</td>'
+      +'<td>'+arr[4]+'</td>'
+      +'<td>'+statusBadge(arr[5])+'</td>'
+      +'<td>'+arr[6]+'</td>'
+      +'<td>'+arr[7]+'</td>'
+      +'<td>'+arr[8]+'</td>'
+      +'<td>'+arr[9]+'</td>'
+      +'<td>'+arr[10]+'</td>'
+      +'<td>'+arr[11]+'</td>'
+      +'<td>'+price+'</td>'
+      +'<td>'+(arr[14]>0?arr[14]:'')+'</td>'
+      +'<td>'+(arr[15]>0?arr[15]:'')+'</td>'
+      +'<td>'+(arr[16]>0?arr[16]:'')+'</td>'
+      +'<td>'+(arr[17]>0?arr[17]:'')+'</td>'
+      +'<td>'+(arr[18]>0?arr[18]:'')+'</td>'
+      +'<td>'+(arr[19]>0?arr[19].toFixed(1)+'/d':'')+'</td>'
+      +'<td>'+(arr[20]>0&&arr[20]<9999?arr[20]:'')+'</td>'
+      +'<td>'+reorderBadge(arr[21])+'</td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById('resultCount').textContent=rows.length+' SKUs shown';
+  applyColVisibility();
+}
+
+// ---- Filters ----
+function applyFilters(){
+  var search=document.getElementById('fSearch').value.toLowerCase();
+  var markets=getSelectedMarkets();
+  var status=document.getElementById('fStatus').value.toLowerCase();
+  var narf=document.getElementById('fNarf').value;
+  var condition=document.getElementById('fCondition').value.toLowerCase();
+  var fulMin=document.getElementById('fFulMin').value;
+  var fulMax=document.getElementById('fFulMax').value;
+  var priceMin=document.getElementById('fPriceMin').value;
+  var priceMax=document.getElementById('fPriceMax').value;
+  var awdMin=document.getElementById('fAwdMin').value;
+  var awdMax=document.getElementById('fAwdMax').value;
+  var awdOnly=document.getElementById('fAwdOnly').value;
+  var filtered=allRows.filter(function(r){
+    if(markets.length>0&&markets.indexOf((r.marketplace||'').toUpperCase())<0) return false;
+    if(status&&(r.listing_status||'').toLowerCase()!==status) return false;
+    if(narf==='narf'&&!r.is_narf) return false;
+    if(narf==='local'&&r.is_narf) return false;
+    if(condition&&(r.condition||'').toLowerCase()!==condition) return false;
+    var ful=si(r.fulfillable);
+    if(fulMin!==''&&ful<parseInt(fulMin)) return false;
+    if(fulMax!==''&&ful>parseInt(fulMax)) return false;
+    var price=sf(r.price);
+    if(priceMin!==''&&price<parseFloat(priceMin)) return false;
+    if(priceMax!==''&&price>parseFloat(priceMax)) return false;
+    var awd=si(r.awd_quantity);
+    if(awdMin!==''&&awd<parseInt(awdMin)) return false;
+    if(awdMax!==''&&awd>parseInt(awdMax)) return false;
+    if(awdOnly==='yes'&&awd<=0) return false;
+    if(awdOnly==='no'&&awd>0) return false;
+    if(search){
+      var hay=((r.seller_sku||'')+' '+(r.asin||'')+' '+(r.product_name||'')).toLowerCase();
+      if(hay.indexOf(search)<0) return false;
+    }
+    return true;
+  });
+  if(sortCol>=0){
+    filtered.sort(function(a,b){
+      var aa=rowToArr(a,0)[sortCol],bb=rowToArr(b,0)[sortCol];
+      if(aa<bb) return sortAsc?-1:1;
+      if(aa>bb) return sortAsc?1:-1;
+      return 0;
+    });
+  }
+  renderTable(filtered);
+}
+function sortBy(col){
+  if(sortCol===col) sortAsc=!sortAsc; else{sortCol=col;sortAsc=true;}
+  applyFilters();
+}
+function quickFilter(btn,type){
+  clearFilters(false);
+  if(activeQuick===type){activeQuick=null;document.querySelectorAll('.quick-btns button').forEach(function(b){b.classList.remove('active')});applyFilters();return;}
+  activeQuick=type;
+  document.querySelectorAll('.quick-btns button').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  if(type==='outofstock'){document.getElementById('fFulMin').value=0;document.getElementById('fFulMax').value=0;}
+  else if(type==='lowstock'){document.getElementById('fFulMin').value=1;document.getElementById('fFulMax').value=9;}
+  else if(type==='narf'){document.getElementById('fNarf').value='narf';}
+  else if(type==='stranded'){document.getElementById('fStatus').value='Stranded';}
+  else if(type==='hasstock'){document.getElementById('fFulMin').value=1;}
+  applyFilters();
+}
+function clearFilters(resetQuick){
+  if(resetQuick===undefined) resetQuick=true;
+  ['fSearch','fFulMin','fFulMax','fPriceMin','fPriceMax','fAwdMin','fAwdMax'].forEach(function(id){document.getElementById(id).value='';});
+  ['fStatus','fNarf','fCondition','fAwdOnly'].forEach(function(id){document.getElementById(id).value='';});
+  clearMarkets();
+  if(resetQuick){activeQuick=null;document.querySelectorAll('.quick-btns button').forEach(function(b){b.classList.remove('active')});}
+  applyFilters();
+}
+
+// ---- Default View ----
+function getCurrentState(){
+  return {
+    markets:getSelectedMarkets(),
+    status:document.getElementById('fStatus').value,
+    narf:document.getElementById('fNarf').value,
+    condition:document.getElementById('fCondition').value,
+    search:document.getElementById('fSearch').value,
+    fulMin:document.getElementById('fFulMin').value,
+    fulMax:document.getElementById('fFulMax').value,
+    priceMin:document.getElementById('fPriceMin').value,
+    priceMax:document.getElementById('fPriceMax').value,
+    awdMin:document.getElementById('fAwdMin').value,
+    awdMax:document.getElementById('fAwdMax').value,
+    awdOnly:document.getElementById('fAwdOnly').value,
+    cols:COLS.map(function(c){return c.visible;})
+  };
+}
+function setDefaultView(){
+  var state=getCurrentState();
+  localStorage.setItem('hbz_default',JSON.stringify(state));
+  var btn=document.getElementById('btnSetDefault');
+  btn.classList.add('active');
+  btn.textContent='★ Default Saved!';
+  setTimeout(function(){btn.textContent='★ Set as Default';},2000);
+}
+function clearDefaultView(){
+  localStorage.removeItem('hbz_default');
+  var btn=document.getElementById('btnSetDefault');
+  btn.classList.remove('active');
+}
+function applyDefaultView(){
+  var raw=localStorage.getItem('hbz_default');
+  if(!raw) return;
+  try{
+    var s=JSON.parse(raw);
+    setMarketCheckboxes(s.markets||[]);
+    document.getElementById('fStatus').value=s.status||'';
+    document.getElementById('fNarf').value=s.narf||'';
+    document.getElementById('fCondition').value=s.condition||'';
+    document.getElementById('fSearch').value=s.search||'';
+    document.getElementById('fFulMin').value=s.fulMin||'';
+    document.getElementById('fFulMax').value=s.fulMax||'';
+    document.getElementById('fPriceMin').value=s.priceMin||'';
+    document.getElementById('fPriceMax').value=s.priceMax||'';
+    document.getElementById('fAwdMin').value=s.awdMin||'';
+    document.getElementById('fAwdMax').value=s.awdMax||'';
+    document.getElementById('fAwdOnly').value=s.awdOnly||'';
+    if(s.cols) s.cols.forEach(function(v,i){if(COLS[i])COLS[i].visible=v;});
+    document.getElementById('btnSetDefault').classList.add('active');
+  }catch(e){}
+}
+
+// ---- Saved Views (server) ----
+async function loadViews(){
+  var res=await fetch('/api/views');
+  var views=await res.json();
+  var container=document.getElementById('viewButtons');
+  container.innerHTML='';
+  views.forEach(function(v){
+    var btn=document.createElement('button');
+    btn.className='btn-view';btn.textContent=v.name;
+    btn.onclick=function(){loadView(v);};
+    var del=document.createElement('button');
+    del.className='btn-del';del.textContent='x';
+    del.onclick=function(){deleteView(v.name);};
+    container.appendChild(btn);container.appendChild(del);
+  });
+}
+function loadView(v){
+  var f=v.filters||{};
+  document.getElementById('fSearch').value=f.search||'';
+  setMarketCheckboxes(f.markets||[]);
+  document.getElementById('fStatus').value=f.status||'';
+  document.getElementById('fNarf').value=f.narf||'';
+  document.getElementById('fCondition').value=f.condition||'';
+  document.getElementById('fFulMin').value=f.fulMin||'';
+  document.getElementById('fFulMax').value=f.fulMax||'';
+  document.getElementById('fPriceMin').value=f.priceMin||'';
+  document.getElementById('fPriceMax').value=f.priceMax||'';
+  document.getElementById('fAwdMin').value=f.awdMin||'';
+  document.getElementById('fAwdMax').value=f.awdMax||'';
+  document.getElementById('fAwdOnly').value=f.awdOnly||'';
+  if(f.cols) f.cols.forEach(function(v,i){if(COLS[i])COLS[i].visible=v;});
+  buildColToggles();
+  applyFilters();
+}
+async function saveView(){
+  var name=document.getElementById('viewName').value.trim();
+  if(!name){alert('Enter a view name first');return;}
+  var filters=getCurrentState();
+  await fetch('/api/views',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,filters:filters})});
+  document.getElementById('viewName').value='';
+  loadViews();
+}
+async function deleteView(name){
+  if(!confirm('Delete view: '+name+'?')) return;
+  await fetch('/api/views/'+encodeURIComponent(name),{method:'DELETE'});
+  loadViews();
+}
+
+// ---- Load inventory ----
+// ---- Sync ----
+var _syncPoll=null;
+async function checkSyncStatus(){
+  try{
+    var r=await fetch('/api/sync-status');
+    var s=await r.json();
+    var info=document.getElementById('syncInfo');
+    var btn=document.getElementById('btnSync');
+    if(s.running){
+      info.className='sync-info running';
+      info.innerHTML='<span class=spin>&#9696;</span> Syncing...';
+      btn.disabled=true;btn.textContent='Syncing...';
+      if(!_syncPoll)_syncPoll=setInterval(checkSyncStatus,5000);
+    }else{
+      if(_syncPoll){clearInterval(_syncPoll);_syncPoll=null;}
+      btn.disabled=false;btn.innerHTML='&#128257; Sync Now';
+      info.className='sync-info';
+      if(s.last_error){info.innerHTML='&#10060; '+s.last_error.substring(0,60);}
+      else if(s.last_finished){info.textContent='Last synced: '+new Date(s.last_finished).toLocaleString();loadInventory();}
+    }
+  }catch(e){}
+}
+async function triggerSync(){
+  var btn=document.getElementById('btnSync');
+  btn.disabled=true;btn.textContent='Starting...';
+  try{
+    var r=await fetch('/api/sync-now',{method:'POST'});
+    var j=await r.json();
+    if(j.ok){if(!_syncPoll)_syncPoll=setInterval(checkSyncStatus,5000);checkSyncStatus();}
+    else{alert(j.msg);btn.disabled=false;btn.innerHTML='&#128257; Sync Now';}
+  }catch(e){alert('Could not start sync');btn.disabled=false;btn.innerHTML='&#128257; Sync Now';}
+}
+async function loadInventory(){
+  var res=await fetch('/api/inventory');
+  var data=await res.json();
+  allRows=data.rows||[];
+  var s=data.stats||{};
+  document.getElementById('sTotalSkus').textContent=(s.total_skus||0).toLocaleString();
+  document.getElementById('sFulfillable').textContent=(s.total_fulfillable||0).toLocaleString();
+  document.getElementById('sInbound').textContent=(s.total_inbound||0).toLocaleString();
+  document.getElementById('sUnfulfillable').textContent=(s.total_unfulfillable||0).toLocaleString();
+  if(allRows.length>0&&allRows[0].synced_at){
+    var si=document.getElementById('syncInfo');if(si&&!si.textContent.includes('synced'))si.textContent='Last synced: '+new Date(allRows[0].synced_at).toLocaleString();
+  }
+  document.getElementById('loading').style.display='none';
+  document.getElementById('invTable').style.display='table';
+  applyDefaultView();
+  buildColToggles();
+  applyFilters();
+}
+loadInventory();
+loadViews();
+checkSyncStatus();
+</script>
+</body>
+</html>
