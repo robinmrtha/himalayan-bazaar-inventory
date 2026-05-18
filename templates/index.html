@@ -167,6 +167,7 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
     <div class=fg><label>Status</label><select id=fStatus onchange=applyFilters()><option value="">All Statuses</option><option>Active</option><option>Inactive</option><option>Stranded</option></select></div>
     <div class=fg><label>NARF</label><select id=fNarf onchange=applyFilters()><option value="">All</option><option value=narf>NARF only</option><option value=local>Non-NARF only</option></select></div>
     <div class=fg><label>Condition</label><select id=fCondition onchange=applyFilters()><option value="">All Conditions</option><option>New</option><option>NewItem</option><option>Used</option></select></div>
+    <div class=fg><label>Reorder Status</label><select id=fReorder onchange=applyFilters()><option value="">All</option><option value="reorder_now">Reorder Now</option><option value="order_soon">Order Soon</option><option value="healthy">Healthy</option><option value="out_of_stock">Out of Stock</option><option value="no_sales">No Sales</option></select></div>
     <div class=fg-range><label>Fulfillable Qty</label><div class=row><input type=number id=fFulMin placeholder=Min oninput=applyFilters() min=0><span style=color:#aaa>-</span><input type=number id=fFulMax placeholder=Max oninput=applyFilters() min=0></div></div>
     <div class=fg-range><label>Price (USD)</label><div class=row><input type=number id=fPriceMin placeholder=Min oninput=applyFilters() min=0 step=0.01><span style=color:#aaa>-</span><input type=number id=fPriceMax placeholder=Max oninput=applyFilters() min=0 step=0.01></div></div>
     <div class=fg-range><label>AWD Qty</label><div class=row><input type=number id=fAwdMin placeholder=Min oninput=applyFilters() min=0><span style=color:#aaa>-</span><input type=number id=fAwdMax placeholder=Max oninput=applyFilters() min=0></div></div>
@@ -185,20 +186,22 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
 
 <div class=quick-btns>
   <strong style=font-size:0.82rem;color:#555>Quick:</strong>
-  <button onclick="quickFilter(this,'outofstock')">&#128308; Out of Stock</button>
-  <button onclick="quickFilter(this,'lowstock')">&#9888; Low Stock (&lt;10)</button>
-  <button onclick="quickFilter(this,'narf')">&#128260; NARF Only</button>
-  <button onclick="quickFilter(this,'stranded')">&#10060; Stranded</button>
-  <button onclick="quickFilter(this,'hasstock')">&#128230; Has Stock</button>
-  <button class=btn-clear onclick=clearFilters()>&#10005; Clear All</button>
+  <button onclick="quickFilter(this,'outofstock')">Out of Stock</button>
+  <button onclick="quickFilter(this,'lowstock')">Low Stock (<10)</button>
+  <button onclick="quickFilter(this,'narf')">NARF Only</button>
+  <button onclick="quickFilter(this,'stranded')">Stranded</button>
+  <button onclick="quickFilter(this,'hasstock')">Has Stock</button>
+  <button onclick="quickFilter(this,'reorder_now')">Reorder Now</button>
+  <button onclick="quickFilter(this,'order_soon')">Order Soon</button>
+  <button class=btn-clear onclick=clearFilters()>Clear All</button>
 </div>
 
 <div class=views-bar>
   <strong style=font-size:0.85rem;color:#555>Saved Views:</strong>
   <input id=viewName placeholder="View name...">
   <button class=btn-save onclick=saveView()>Save View</button>
-  <button class=btn-default id=btnSetDefault onclick=setDefaultView()>&#9733; Set as Default</button>
-  <button class=btn-clear-default onclick=clearDefaultView()>&#10005; Clear Default</button>
+  <button class=btn-default id=btnSetDefault onclick=setDefaultView()>Set as Default</button>
+  <button class=btn-clear-default onclick=clearDefaultView()>Clear Default</button>
   <span id=viewButtons></span>
 </div>
 <div class=result-count id=resultCount></div>
@@ -229,7 +232,7 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
       <th data-col=21 onclick="sortBy(21)">Reorder</th>
     </tr></thead>
     <tbody id=invBody></tbody>
-  </table>
+   </table>
 </div>
 <script>
 var allRows=[], sortCol=-1, sortAsc=true, activeQuick=null;
@@ -269,11 +272,11 @@ function statusBadge(s){
 }
 function reorderBadge(s){
   var map={
-    'reorder_now':  ['#fee2e2','#dc2626','&#128308; Reorder Now'],
-    'order_soon':   ['#fef3c7','#d97706','&#128993; Order Soon'],
-    'healthy':      ['#dcfce7','#16a34a','&#128994; Healthy'],
-    'out_of_stock': ['#f3f4f6','#6b7280','&#9899; Out of Stock'],
-    'no_sales':     ['#f3f4f6','#9ca3af','&mdash; No Sales']
+    'reorder_now':  ['#fee2e2','#dc2626','Reorder Now'],
+    'order_soon':   ['#fef3c7','#d97706','Order Soon'],
+    'healthy':      ['#dcfce7','#16a34a','Healthy'],
+    'out_of_stock': ['#f3f4f6','#6b7280','Out of Stock'],
+    'no_sales':     ['#f3f4f6','#9ca3af','No Sales']
   };
   if(!s||!map[s]) return '';
   return '<span style="background:'+map[s][0]+';color:'+map[s][1]+';padding:2px 6px;border-radius:8px;font-size:0.72rem;font-weight:bold;white-space:nowrap">'+map[s][2]+'</span>';
@@ -351,7 +354,6 @@ function toggleMsd(){
   dd.classList.toggle('open',!open);
   btn.classList.toggle('active',!open);
   if(!open){
-    // close on outside click
     setTimeout(function(){
       document.addEventListener('click',closeMsdOutside,{once:true});
     },0);
@@ -416,27 +418,27 @@ function renderTable(rows){
     if(isNarf) tr.style.opacity='0.6';
     var price=arr[12]>0?'$'+arr[12].toFixed(2):'';
     tr.innerHTML=
-      '<td>'+arr[0]+'</td>'
-      +'<td>'+marketBadge(arr[1],isNarf)+'</td>'
-      +'<td>'+arr[2]+'</td>'
-      +'<td>'+arr[3]+'</td>'
-      +'<td>'+arr[4]+'</td>'
-      +'<td>'+statusBadge(arr[5])+'</td>'
-      +'<td>'+arr[6]+'</td>'
-      +'<td>'+arr[7]+'</td>'
-      +'<td>'+arr[8]+'</td>'
-      +'<td>'+arr[9]+'</td>'
-      +'<td>'+arr[10]+'</td>'
-      +'<td>'+arr[11]+'</td>'
-      +'<td>'+price+'</td>'
-      +'<td>'+(arr[14]>0?arr[14]:'')+'</td>'
-      +'<td>'+(arr[15]>0?arr[15]:'')+'</td>'
-      +'<td>'+(arr[16]>0?arr[16]:'')+'</td>'
-      +'<td>'+(arr[17]>0?arr[17]:'')+'</td>'
-      +'<td>'+(arr[18]>0?arr[18]:'')+'</td>'
-      +'<td>'+(arr[19]>0?arr[19].toFixed(1)+'/d':'')+'</td>'
-      +'<td>'+(arr[20]>0&&arr[20]<9999?arr[20]:'')+'</td>'
-      +'<td>'+reorderBadge(arr[21])+'</td>';
+      '<td>'+arr[0]+'</td>'+
+      '<td>'+marketBadge(arr[1],isNarf)+'</td>'+
+      '<td>'+arr[2]+'</td>'+
+      '<td>'+arr[3]+'</td>'+
+      '<td>'+arr[4]+'</td>'+
+      '<td>'+statusBadge(arr[5])+'</td>'+
+      '<td>'+arr[6]+'</td>'+
+      '<td>'+arr[7]+'</td>'+
+      '<td>'+arr[8]+'</td>'+
+      '<td>'+arr[9]+'</td>'+
+      '<td>'+arr[10]+'</td>'+
+      '<td>'+arr[11]+'</td>'+
+      '<td>'+price+'</td>'+
+      '<td>'+(arr[14]>0?arr[14]:'')+'</td>'+
+      '<td>'+(arr[15]>0?arr[15]:'')+'</td>'+
+      '<td>'+(arr[16]>0?arr[16]:'')+'</td>'+
+      '<td>'+(arr[17]>0?arr[17]:'')+'</td>'+
+      '<td>'+(arr[18]>0?arr[18]:'')+'</td>'+
+      '<td>'+(arr[19]>0?arr[19].toFixed(1)+'/d':'')+'</td>'+
+      '<td>'+(arr[20]>0&&arr[20]<9999?arr[20]:'')+'</td>'+
+      '<td>'+reorderBadge(arr[21])+'</td>';
     tbody.appendChild(tr);
   });
   document.getElementById('resultCount').textContent=rows.length+' SKUs shown';
@@ -450,6 +452,7 @@ function applyFilters(){
   var status=document.getElementById('fStatus').value.toLowerCase();
   var narf=document.getElementById('fNarf').value;
   var condition=document.getElementById('fCondition').value.toLowerCase();
+  var reorder=document.getElementById('fReorder').value;
   var fulMin=document.getElementById('fFulMin').value;
   var fulMax=document.getElementById('fFulMax').value;
   var priceMin=document.getElementById('fPriceMin').value;
@@ -463,10 +466,11 @@ function applyFilters(){
     if(narf==='narf'&&!r.is_narf) return false;
     if(narf==='local'&&r.is_narf) return false;
     if(condition&&(r.condition||'').toLowerCase()!==condition) return false;
+    if(reorder&&(r.reorder_status||'')!==reorder) return false;
     var ful=si(r.fulfillable);
     if(fulMin!==''&&ful<parseInt(fulMin)) return false;
     if(fulMax!==''&&ful>parseInt(fulMax)) return false;
-    var price=sf(r.price);
+        var price=sf(r.price);
     if(priceMin!==''&&price<parseFloat(priceMin)) return false;
     if(priceMax!==''&&price>parseFloat(priceMax)) return false;
     var awd=si(r.awd_quantity);
@@ -505,12 +509,14 @@ function quickFilter(btn,type){
   else if(type==='narf'){document.getElementById('fNarf').value='narf';}
   else if(type==='stranded'){document.getElementById('fStatus').value='Stranded';}
   else if(type==='hasstock'){document.getElementById('fFulMin').value=1;}
+  else if(type==='reorder_now'){document.getElementById('fReorder').value='reorder_now';}
+  else if(type==='order_soon'){document.getElementById('fReorder').value='order_soon';}
   applyFilters();
 }
 function clearFilters(resetQuick){
   if(resetQuick===undefined) resetQuick=true;
   ['fSearch','fFulMin','fFulMax','fPriceMin','fPriceMax','fAwdMin','fAwdMax'].forEach(function(id){document.getElementById(id).value='';});
-  ['fStatus','fNarf','fCondition','fAwdOnly'].forEach(function(id){document.getElementById(id).value='';});
+  ['fStatus','fNarf','fCondition','fAwdOnly','fReorder'].forEach(function(id){document.getElementById(id).value='';});
   clearMarkets();
   if(resetQuick){activeQuick=null;document.querySelectorAll('.quick-btns button').forEach(function(b){b.classList.remove('active')});}
   applyFilters();
@@ -523,6 +529,7 @@ function getCurrentState(){
     status:document.getElementById('fStatus').value,
     narf:document.getElementById('fNarf').value,
     condition:document.getElementById('fCondition').value,
+    reorder:document.getElementById('fReorder').value,
     search:document.getElementById('fSearch').value,
     fulMin:document.getElementById('fFulMin').value,
     fulMax:document.getElementById('fFulMax').value,
@@ -539,8 +546,8 @@ function setDefaultView(){
   localStorage.setItem('hbz_default',JSON.stringify(state));
   var btn=document.getElementById('btnSetDefault');
   btn.classList.add('active');
-  btn.textContent='★ Default Saved!';
-  setTimeout(function(){btn.textContent='★ Set as Default';},2000);
+  btn.textContent='Default Saved!';
+  setTimeout(function(){btn.textContent='Set as Default';},2000);
 }
 function clearDefaultView(){
   localStorage.removeItem('hbz_default');
@@ -556,6 +563,7 @@ function applyDefaultView(){
     document.getElementById('fStatus').value=s.status||'';
     document.getElementById('fNarf').value=s.narf||'';
     document.getElementById('fCondition').value=s.condition||'';
+    document.getElementById('fReorder').value=s.reorder||'';
     document.getElementById('fSearch').value=s.search||'';
     document.getElementById('fFulMin').value=s.fulMin||'';
     document.getElementById('fFulMax').value=s.fulMax||'';
@@ -592,6 +600,7 @@ function loadView(v){
   document.getElementById('fStatus').value=f.status||'';
   document.getElementById('fNarf').value=f.narf||'';
   document.getElementById('fCondition').value=f.condition||'';
+  document.getElementById('fReorder').value=f.reorder||'';
   document.getElementById('fFulMin').value=f.fulMin||'';
   document.getElementById('fFulMax').value=f.fulMax||'';
   document.getElementById('fPriceMin').value=f.priceMin||'';
@@ -628,14 +637,14 @@ async function checkSyncStatus(){
     var btn=document.getElementById('btnSync');
     if(s.running){
       info.className='sync-info running';
-      info.innerHTML='<span class=spin>&#9696;</span> Syncing...';
+      info.innerHTML='<span class=spin></span> Syncing...';
       btn.disabled=true;btn.textContent='Syncing...';
       if(!_syncPoll)_syncPoll=setInterval(checkSyncStatus,5000);
     }else{
       if(_syncPoll){clearInterval(_syncPoll);_syncPoll=null;}
-      btn.disabled=false;btn.innerHTML='&#128257; Sync Now';
+      btn.disabled=false;btn.innerHTML='Sync Now';
       info.className='sync-info';
-      if(s.last_error){info.innerHTML='&#10060; '+s.last_error.substring(0,60);}
+      if(s.last_error){info.innerHTML='Error: '+s.last_error.substring(0,60);}
       else if(s.last_finished){info.textContent='Last synced: '+new Date(s.last_finished).toLocaleString();loadInventory();}
     }
   }catch(e){}
@@ -647,8 +656,8 @@ async function triggerSync(){
     var r=await fetch('/api/sync-now',{method:'POST'});
     var j=await r.json();
     if(j.ok){if(!_syncPoll)_syncPoll=setInterval(checkSyncStatus,5000);checkSyncStatus();}
-    else{alert(j.msg);btn.disabled=false;btn.innerHTML='&#128257; Sync Now';}
-  }catch(e){alert('Could not start sync');btn.disabled=false;btn.innerHTML='&#128257; Sync Now';}
+    else{alert(j.msg);btn.disabled=false;btn.innerHTML='Sync Now';}
+  }catch(e){alert('Could not start sync');btn.disabled=false;btn.innerHTML='Sync Now';}
 }
 async function loadInventory(){
   var res=await fetch('/api/inventory');
