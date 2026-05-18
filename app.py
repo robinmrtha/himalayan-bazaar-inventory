@@ -3,14 +3,32 @@ import sys
 import os
 import threading
 from datetime import datetime
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from supabase import create_client
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from functools import wraps
+import secrets
 
 load_dotenv()
 app = Flask(__name__)
+
+# Secret key for session management
+app.secret_key = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32))
+
+# Get credentials from environment variables
+REQUIRED_USERNAME = os.getenv("DASHBOARD_USERNAME", "admin")
+REQUIRED_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "changeme123")
+
+# Login required decorator
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -21,11 +39,33 @@ def safe_int(val):
     try: return int(val or 0)
     except: return 0
 
+# Login page
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username == REQUIRED_USERNAME and password == REQUIRED_PASSWORD:
+            session['logged_in'] = True
+            return redirect(url_for('index'))
+        error = 'Invalid username or password'
+    return render_template('login.html', error=error)
+
+# Logout route
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('login'))
+
+# Protected routes (all have @login_required added)
 @app.route("/")
+@login_required
 def index():
     return render_template("index.html")
 
 @app.route("/api/inventory")
+@login_required
 def get_inventory():
     market = request.args.get("market", "")
     search = request.args.get("search", "")
@@ -58,6 +98,7 @@ def get_inventory():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/views", methods=["GET"])
+@login_required
 def get_views():
     try:
         res = supabase.table("saved_views").select("*").order("name").execute()
@@ -66,6 +107,7 @@ def get_views():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/views", methods=["POST"])
+@login_required
 def save_view():
     try:
         body = request.get_json()
@@ -78,6 +120,7 @@ def save_view():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/views/<name>", methods=["DELETE"])
+@login_required
 def delete_view(name):
     try:
         supabase.table("saved_views").delete().eq("name", name).execute()
@@ -105,10 +148,12 @@ def run_sync():
         _sync_status["running"] = False
 
 @app.route("/api/sync-status")
+@login_required
 def sync_status():
     return jsonify(_sync_status)
 
 @app.route("/api/sync-now", methods=["POST"])
+@login_required
 def sync_now():
     if _sync_status["running"]:
         return jsonify({"ok": False, "msg": "Sync already running"}), 409
