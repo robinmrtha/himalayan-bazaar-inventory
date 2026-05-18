@@ -34,6 +34,7 @@ header h1{font-size:1.2rem;color:white;margin:0}
 .fg-range label{font-size:0.75rem;color:#555;font-weight:bold}
 .fg-range .row{display:flex;align-items:center;gap:4px}
 .fg-range input{width:70px;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;height:32px}
+/* Market multi-select dropdown */
 .msd-wrap{display:flex;flex-direction:column;gap:4px;position:relative}
 .msd-wrap label.msd-lbl{font-size:0.75rem;color:#555;font-weight:bold}
 .msd-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;height:32px;background:white;cursor:pointer;min-width:160px;user-select:none;white-space:nowrap}
@@ -54,6 +55,18 @@ header h1{font-size:1.2rem;color:white;margin:0}
 .msd-footer{padding:6px 14px 2px;display:flex;gap:8px}
 .msd-footer button{font-size:0.78rem;padding:3px 8px;border:1px solid #ddd;border-radius:4px;background:white;cursor:pointer;color:#555}
 .msd-footer button:hover{background:#f0f4ff;border-color:#1a1a2e;color:#1a1a2e}
+/* Reorder multi-select dropdown (same style as market) */
+.rsd-wrap{display:flex;flex-direction:column;gap:4px;position:relative}
+.rsd-wrap label.rsd-lbl{font-size:0.75rem;color:#555;font-weight:bold}
+.rsd-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;height:32px;background:white;cursor:pointer;min-width:160px;user-select:none;white-space:nowrap}
+.rsd-btn:hover{border-color:#1a1a2e}
+.rsd-btn.active{border-color:#1a1a2e;background:#f0f4ff}
+.rsd-btn .arr{font-size:0.65rem;color:#999;margin-left:4px}
+.rsd-dropdown{display:none;position:absolute;top:100%;left:0;z-index:100;background:white;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:200px;padding:8px 0;margin-top:4px}
+.rsd-dropdown.open{display:block}
+.rsd-footer{padding:6px 14px 2px;display:flex;gap:8px}
+.rsd-footer button{font-size:0.78rem;padding:3px 8px;border:1px solid #ddd;border-radius:4px;background:white;cursor:pointer;color:#555}
+.rsd-footer button:hover{background:#f0f4ff;border-color:#1a1a2e;color:#1a1a2e}
 .col-panel{background:white;margin:0 24px 12px;border-radius:8px;padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
 .col-panel-header{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
 .col-panel-header h3{font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.05em}
@@ -166,7 +179,27 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
     <div class=fg><label>Status</label><select id=fStatus onchange=applyFilters()><option value="">All Statuses</option><option>Active</option><option>Inactive</option><option>Stranded</option></select></div>
     <div class=fg><label>NARF</label><select id=fNarf onchange=applyFilters()><option value="">All</option><option value=narf>NARF only</option><option value=local>Non-NARF only</option></select></div>
     <div class=fg><label>Condition</label><select id=fCondition onchange=applyFilters()><option value="">All Conditions</option><option>New</option><option>NewItem</option><option>Used</option></select></div>
-    <div class=fg><label>Reorder Status</label><select id=fReorder onchange=applyFilters()><option value="">All</option><option value="reorder_now">Reorder Now</option><option value="order_soon">Order Soon</option><option value="healthy">Healthy</option><option value="out_of_stock">Out of Stock</option><option value="no_sales">No Sales</option></select></div>
+    
+    <!-- Reorder Status Multi-Select Dropdown -->
+    <div class=rsd-wrap>
+      <label class=rsd-lbl>Reorder Status</label>
+      <div class=rsd-btn id=rsdBtn onclick=toggleRsd()>
+        <span id=rsdLabel>All Statuses</span><span class=arr>▼</span>
+      </div>
+      <div class=rsd-dropdown id=rsdDropdown>
+        <label class=msd-item><input type=checkbox data-reorder="reorder_now" onchange=onRsdChange()><span>🔴 Reorder Now</span></label>
+        <label class=msd-item><input type=checkbox data-reorder="order_soon" onchange=onRsdChange()><span>🟡 Order Soon</span></label>
+        <label class=msd-item><input type=checkbox data-reorder="healthy" onchange=onRsdChange()><span>🟢 Healthy</span></label>
+        <label class=msd-item><input type=checkbox data-reorder="out_of_stock" onchange=onRsdChange()><span>⚫ Out of Stock</span></label>
+        <label class=msd-item><input type=checkbox data-reorder="no_sales" onchange=onRsdChange()><span>📊 No Sales</span></label>
+        <div class=msd-sep></div>
+        <div class=rsd-footer>
+          <button onclick="selectAllReorder()">Select All</button>
+          <button onclick="clearReorder()">Clear</button>
+        </div>
+      </div>
+    </div>
+    
     <div class=fg-range><label>Fulfillable Qty</label><div class=row><input type=number id=fFulMin placeholder=Min oninput=applyFilters() min=0><span>-</span><input type=number id=fFulMax placeholder=Max oninput=applyFilters() min=0></div></div>
     <div class=fg-range><label>Price (USD)</label><div class=row><input type=number id=fPriceMin placeholder=Min oninput=applyFilters() min=0 step=0.01><span>-</span><input type=number id=fPriceMax placeholder=Max oninput=applyFilters() min=0 step=0.01></div></div>
     <div class=fg-range><label>AWD Qty</label><div class=row><input type=number id=fAwdMin placeholder=Min oninput=applyFilters() min=0><span>-</span><input type=number id=fAwdMax placeholder=Max oninput=applyFilters() min=0></div></div>
@@ -272,11 +305,11 @@ function statusBadge(s){
 
 function reorderBadge(s){
   var map={
-    'reorder_now':  ['#fee2e2','#dc2626','Reorder Now'],
-    'order_soon':   ['#fef3c7','#d97706','Order Soon'],
-    'healthy':      ['#dcfce7','#16a34a','Healthy'],
-    'out_of_stock': ['#f3f4f6','#6b7280','Out of Stock'],
-    'no_sales':     ['#f3f4f6','#9ca3af','No Sales']
+    'reorder_now':  ['#fee2e2','#dc2626','🔴 Reorder Now'],
+    'order_soon':   ['#fef3c7','#d97706','🟡 Order Soon'],
+    'healthy':      ['#dcfce7','#16a34a','🟢 Healthy'],
+    'out_of_stock': ['#f3f4f6','#6b7280','⚫ Out of Stock'],
+    'no_sales':     ['#f3f4f6','#9ca3af','📊 No Sales']
   };
   if(!s||!map[s]) return '';
   return '<span style="background:'+map[s][0]+';color:'+map[s][1]+';padding:2px 6px;border-radius:8px;font-size:0.72rem;font-weight:bold;white-space:nowrap">'+map[s][2]+'</span>';
@@ -344,6 +377,7 @@ function saveColState(){
   localStorage.setItem('hbz_cols',JSON.stringify(state));
 }
 
+// Market multi-select functions
 function toggleMsd(){
   var dd=document.getElementById('msdDropdown');
   var btn=document.getElementById('msdBtn');
@@ -408,6 +442,66 @@ function setMarketCheckboxes(markets){
   updateMsdLabel();
 }
 
+// Reorder multi-select functions
+function toggleRsd(){
+  var dd=document.getElementById('rsdDropdown');
+  var btn=document.getElementById('rsdBtn');
+  var open=dd.classList.contains('open');
+  dd.classList.toggle('open',!open);
+  btn.classList.toggle('active',!open);
+  if(!open){
+    setTimeout(function(){
+      document.addEventListener('click',closeRsdOutside,{once:true});
+    },0);
+  }
+}
+
+function closeRsdOutside(e){
+  var wrap=document.querySelector('.rsd-wrap');
+  if(!wrap.contains(e.target)){
+    document.getElementById('rsdDropdown').classList.remove('open');
+    document.getElementById('rsdBtn').classList.remove('active');
+  }
+}
+
+function onRsdChange(){
+  updateRsdLabel();
+  applyFilters();
+}
+
+function updateRsdLabel(){
+  var sel=getSelectedReorder();
+  var lbl=document.getElementById('rsdLabel');
+  if(sel.length===0) lbl.textContent='All Statuses';
+  else if(sel.length<=2) lbl.textContent=sel.join(', ');
+  else lbl.textContent=sel.length+' statuses selected';
+}
+
+function selectAllReorder(){
+  document.querySelectorAll('#rsdDropdown input[type=checkbox]').forEach(function(cb){cb.checked=true;});
+  onRsdChange();
+}
+
+function clearReorder(){
+  document.querySelectorAll('#rsdDropdown input[type=checkbox]').forEach(function(cb){cb.checked=false;});
+  onRsdChange();
+}
+
+function getSelectedReorder(){
+  var sel=[];
+  document.querySelectorAll('#rsdDropdown input[type=checkbox]').forEach(function(cb){
+    if(cb.checked) sel.push(cb.getAttribute('data-reorder'));
+  });
+  return sel;
+}
+
+function setReorderCheckboxes(reorderStatuses){
+  document.querySelectorAll('#rsdDropdown input[type=checkbox]').forEach(function(cb){
+    cb.checked=reorderStatuses.length>0&&reorderStatuses.indexOf(cb.getAttribute('data-reorder'))>=0;
+  });
+  updateRsdLabel();
+}
+
 function renderTable(rows){
   var tbody=document.getElementById('invBody');
   document.querySelectorAll('#headerRow th').forEach(function(h,i){
@@ -455,7 +549,7 @@ function applyFilters(){
   var status=document.getElementById('fStatus').value.toLowerCase();
   var narf=document.getElementById('fNarf').value;
   var condition=document.getElementById('fCondition').value.toLowerCase();
-  var reorder=document.getElementById('fReorder').value;
+  var reorderStatuses=getSelectedReorder();
   var fulMin=document.getElementById('fFulMin').value;
   var fulMax=document.getElementById('fFulMax').value;
   var priceMin=document.getElementById('fPriceMin').value;
@@ -463,13 +557,15 @@ function applyFilters(){
   var awdMin=document.getElementById('fAwdMin').value;
   var awdMax=document.getElementById('fAwdMax').value;
   var awdOnly=document.getElementById('fAwdOnly').value;
+  
   var filtered=allRows.filter(function(r){
     if(markets.length>0&&markets.indexOf((r.marketplace||'').toUpperCase())<0) return false;
     if(status&&(r.listing_status||'').toLowerCase()!==status) return false;
     if(narf==='narf'&&!r.is_narf) return false;
     if(narf==='local'&&r.is_narf) return false;
     if(condition&&(r.condition||'').toLowerCase()!==condition) return false;
-    if(reorder&&(r.reorder_status||'')!==reorder) return false;
+    if(reorderStatuses.length>0&&reorderStatuses.indexOf((r.reorder_status||''))<0) return false;
+    
     var ful=si(r.fulfillable);
     if(fulMin!==''&&ful<parseInt(fulMin)) return false;
     if(fulMax!==''&&ful>parseInt(fulMax)) return false;
@@ -514,16 +610,17 @@ function quickFilter(btn,type){
   else if(type==='narf'){document.getElementById('fNarf').value='narf';}
   else if(type==='stranded'){document.getElementById('fStatus').value='Stranded';}
   else if(type==='hasstock'){document.getElementById('fFulMin').value=1;}
-  else if(type==='reorder_now'){document.getElementById('fReorder').value='reorder_now';}
-  else if(type==='order_soon'){document.getElementById('fReorder').value='order_soon';}
+  else if(type==='reorder_now'){clearReorder();document.querySelector('#rsdDropdown input[data-reorder="reorder_now"]').checked=true;onRsdChange();}
+  else if(type==='order_soon'){clearReorder();document.querySelector('#rsdDropdown input[data-reorder="order_soon"]').checked=true;onRsdChange();}
   applyFilters();
 }
 
 function clearFilters(resetQuick){
   if(resetQuick===undefined) resetQuick=true;
   ['fSearch','fFulMin','fFulMax','fPriceMin','fPriceMax','fAwdMin','fAwdMax'].forEach(function(id){document.getElementById(id).value='';});
-  ['fStatus','fNarf','fCondition','fAwdOnly','fReorder'].forEach(function(id){document.getElementById(id).value='';});
+  ['fStatus','fNarf','fCondition','fAwdOnly'].forEach(function(id){document.getElementById(id).value='';});
   clearMarkets();
+  clearReorder();
   if(resetQuick){activeQuick=null;document.querySelectorAll('.quick-btns button').forEach(function(b){b.classList.remove('active')});}
   applyFilters();
 }
@@ -534,7 +631,7 @@ function getCurrentState(){
     status:document.getElementById('fStatus').value,
     narf:document.getElementById('fNarf').value,
     condition:document.getElementById('fCondition').value,
-    reorder:document.getElementById('fReorder').value,
+    reorder:getSelectedReorder(),
     search:document.getElementById('fSearch').value,
     fulMin:document.getElementById('fFulMin').value,
     fulMax:document.getElementById('fFulMax').value,
@@ -571,7 +668,7 @@ function applyDefaultView(){
     document.getElementById('fStatus').value=s.status||'';
     document.getElementById('fNarf').value=s.narf||'';
     document.getElementById('fCondition').value=s.condition||'';
-    document.getElementById('fReorder').value=s.reorder||'';
+    setReorderCheckboxes(s.reorder||[]);
     document.getElementById('fSearch').value=s.search||'';
     document.getElementById('fFulMin').value=s.fulMin||'';
     document.getElementById('fFulMax').value=s.fulMax||'';
@@ -608,7 +705,7 @@ function loadView(v){
   document.getElementById('fStatus').value=f.status||'';
   document.getElementById('fNarf').value=f.narf||'';
   document.getElementById('fCondition').value=f.condition||'';
-  document.getElementById('fReorder').value=f.reorder||'';
+  setReorderCheckboxes(f.reorder||[]);
   document.getElementById('fFulMin').value=f.fulMin||'';
   document.getElementById('fFulMax').value=f.fulMax||'';
   document.getElementById('fPriceMin').value=f.priceMin||'';
