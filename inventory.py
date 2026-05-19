@@ -198,17 +198,26 @@ def save_to_supabase(rows):
         "apikey":        SUPABASE_KEY,
         "Authorization": "Bearer " + SUPABASE_KEY,
         "Content-Type":  "application/json",
-        "Prefer":        "resolution=merge-duplicates",
     }
-    resp = requests.post(
-        SUPABASE_URL + "/rest/v1/inventory?on_conflict=seller_sku,marketplace",
+    # Step 1: delete all existing rows so stale SKUs don't linger
+    del_resp = requests.delete(
+        SUPABASE_URL + "/rest/v1/inventory?id=gte.0",
         headers=hdrs,
+    )
+    if del_resp.status_code not in (200, 204):
+        print("  Delete warning " + str(del_resp.status_code) + ": " + del_resp.text[:200])
+    else:
+        print("  Cleared existing inventory rows")
+    # Step 2: insert fresh data
+    ins_resp = requests.post(
+        SUPABASE_URL + "/rest/v1/inventory",
+        headers={**hdrs, "Prefer": "return=minimal"},
         json=rows,
     )
-    if resp.status_code in (200, 201, 204):
-        print("  Saved " + str(len(rows)) + " rows")
+    if ins_resp.status_code in (200, 201, 204):
+        print("  Inserted " + str(len(rows)) + " rows")
     else:
-        print("  Save error " + str(resp.status_code) + ": " + resp.text[:200])
+        print("  Insert error " + str(ins_resp.status_code) + ": " + ins_resp.text[:200])
 
 if __name__ == "__main__":
     print("Getting access token...")
