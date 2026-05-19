@@ -128,6 +128,68 @@ def delete_view(name):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/api/ledger")
+@login_required
+def get_ledger():
+        """Return ledger summary rows from the ledger_summary table.
+
+            Query params (all optional):
+                  country   – filter by marketplace code: US | CA | MX
+                        sku       – partial match on seller_sku (case-insensitive)
+                              date_from – start date inclusive, YYYY-MM-DD
+                                    date_to   – end date   inclusive, YYYY-MM-DD
+                                          limit     – max rows returned (default 2000, max 5000)
+                                              """
+        country   = request.args.get("country", "")
+        sku       = request.args.get("sku", "")
+        date_from = request.args.get("date_from", "")
+        date_to   = request.args.get("date_to", "")
+        try:
+                    limit = min(int(request.args.get("limit", 2000)), 5000)
+        except ValueError:
+                    limit = 2000
+
+    try:
+                q = supabase.table("ledger_summary").select(
+                                "id, country, date, fnsku, asin, seller_sku, event_type, "
+                                "fulfillment_center, disposition, quantity, "
+                                "reconciled_quantity, unreconciled_quantity, synced_at"
+                )
+                if country:
+                                q = q.eq("country", country)
+                            if sku:
+                                            q = q.ilike("seller_sku", f"%{sku}%")
+                                        if date_from:
+                                                        q = q.gte("date", date_from)
+                                                    if date_to:
+                                                                    q = q.lte("date", date_to)
+
+        res = q.order("date", desc=True).order("country").limit(limit).execute()
+        rows = res.data or []
+
+        # Build aggregate stats for the returned rows
+        total_quantity              = sum(r.get("quantity", 0) or 0 for r in rows)
+        total_reconciled            = sum(r.get("reconciled_quantity", 0) or 0 for r in rows)
+        total_unreconciled          = sum(r.get("unreconciled_quantity", 0) or 0 for r in rows)
+        by_country = {}
+        for r in rows:
+                        c = r.get("country", "")
+                        by_country[c] = by_country.get(c, 0) + (r.get("quantity", 0) or 0)
+
+        return jsonify({
+                        "rows": rows,
+                        "stats": {
+                                            "total_rows":           len(rows),
+                                            "total_quantity":       total_quantity,
+                                            "total_reconciled":     total_reconciled,
+                                            "total_unreconciled":   total_unreconciled,
+                                            "quantity_by_country":  by_country,
+                        }
+        })
+except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # ---- Sync state ----
 _sync_status = {"running": False, "last_started": None, "last_finished": None, "last_error": None}
 
