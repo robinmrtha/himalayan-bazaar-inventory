@@ -110,6 +110,11 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
 .b-stranded{background:#fee2e2;color:#991b1b}
 .b-unknown{background:#fef3c7;color:#92400e}
 #loading{text-align:center;padding:40px;color:#888}
+  /* ── Tab nav ─────────────────────────────────────── */
+  .tab-nav{display:flex;gap:0;padding:0 24px;background:#1a1a2e;border-bottom:2px solid #2d2d5e}
+  .tab-nav button{padding:10px 20px;border:none;background:transparent;color:#a0aec0;cursor:pointer;font-size:0.88rem;font-weight:500;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.2s}
+  .tab-nav button:hover{color:white}
+  .tab-nav button.active{color:white;border-bottom-color:#7c3aed}
 </style>
 </head>
 <body>
@@ -121,6 +126,11 @@ td{padding:6px 10px;font-size:0.82rem;border-bottom:1px solid #eee}
     <a href="/logout" class="btn-logout">🚪 Logout</a>
   </div>
 </header>
+  <nav class="tab-nav">
+      <button id="tabnav-inventory" class="active" onclick="showTab('inventory')">📦 Inventory</button>button>
+      <button id="tabnav-ledger" onclick="showTab('ledger')">📒 Ledger Summary</button>button>
+  </nav>nav>
+  <div id="tab-inventory">
 
 <div class=stats>
   <div class=stat-card><div class=label>Total SKUs</div><div class=value id=sTotalSkus>-</div></div>
@@ -787,8 +797,122 @@ async function loadInventory(){
 }
 
 loadInventory();
+  loadLedger();
+
+  // ── Tab switching ──────────────────────────────────────────
+  function showTab(name){
+      ['inventory','ledger'].forEach(t=>{
+            document.getElementById('tab-'+t).style.display=t===name?'block':'none';
+            document.getElementById('tabnav-'+t).classList.toggle('active',t===name);
+      });
+  }
+
+  // ── Ledger ─────────────────────────────────────────────────
+  var _ledgerRows=[];
+  async function loadLedger(){
+      try{
+            var params=new URLSearchParams();
+            var c=document.getElementById('lCountry').value;
+            var s=document.getElementById('lSku').value.trim();
+            var df=document.getElementById('lDateFrom').value;
+            var dt=document.getElementById('lDateTo').value;
+            if(c)params.set('country',c);
+            if(s)params.set('sku',s);
+            if(df)params.set('date_from',df);
+            if(dt)params.set('date_to',dt);
+            document.getElementById('lLoading').style.display='block';
+            document.getElementById('lTableWrap').style.display='none';
+            var res=await fetch('/api/ledger?'+params.toString());
+            var data=await res.json();
+            _ledgerRows=data.rows||[];
+            var st=data.stats||{};
+            document.getElementById('lTotalRows').textContent=(st.total_rows||0).toLocaleString();
+            document.getElementById('lTotalQty').textContent=(st.total_quantity||0).toLocaleString();
+            document.getElementById('lTotalRec').textContent=(st.total_reconciled||0).toLocaleString();
+            document.getElementById('lTotalUnrec').textContent=(st.total_unreconciled||0).toLocaleString();
+            var byC=st.quantity_by_country||{};
+            document.getElementById('lByCountry').textContent=
+                    Object.entries(byC).map(([k,v])=>k+': '+v.toLocaleString()).join(' | ')||'—';
+            renderLedgerTable(_ledgerRows);
+            document.getElementById('lLoading').style.display='none';
+            document.getElementById('lTableWrap').style.display='block';
+      }catch(e){
+            document.getElementById('lLoading').textContent='Error loading ledger: '+e.message;
+      }
+  }
+  function renderLedgerTable(rows){
+      var cols=['date','country','seller_sku','asin','fnsku','event_type','fulfillment_center','disposition','quantity','reconciled_quantity','unreconciled_quantity'];
+      var hdrs={'date':'Date','country':'Country','seller_sku':'Seller SKU','asin':'ASIN','fnsku':'FNSKU','event_type':'Event Type','fulfillment_center':'FC','disposition':'Disposition','quantity':'Qty','reconciled_quantity':'Reconciled','unreconciled_quantity':'Unreconciled'};
+      var html='<table><thead><tr>'+cols.map(c=>'<th>'+hdrs[c]+'</th>').join('')+'</tr></thead><tbody>';
+      if(!rows.length){html+='<tr><td colspan='+cols.length+' style="text-align:center;padding:24px;color:#888">No ledger data found</td></tr>';}
+      rows.forEach(r=>{
+            var mkt=r.country||'';
+            var badge=mkt?'<span class="b b-'+mkt.toLowerCase()+'">'+mkt+'</span>':'';
+            html+='<tr>';
+            cols.forEach(c=>{
+                    if(c==='country'){html+='<td>'+badge+'</td>';}
+                    else if(c==='quantity'||c==='reconciled_quantity'||c==='unreconciled_quantity'){
+                              var v=r[c]||0;
+                              var style=c==='unreconciled_quantity'&&v!==0?'color:#dc2626;font-weight:bold':'';
+                              html+='<td style="'+style+'">'+v.toLocaleString()+'</td>';
+                    }else{html+='<td>'+(r[c]||'')+'</td>';}
+            });
+            html+='</tr>';
+      });
+      html+='</tbody></table>';
+      document.getElementById('lTable').innerHTML=html;
+      document.getElementById('lResultCount').textContent=rows.length.toLocaleString()+' rows';
+  }
 loadViews();
 checkSyncStatus();
+function clearLedgerFilters(){
+    document.getElementById('lCountry').value='';
+    document.getElementById('lSku').value='';
+    document.getElementById('lDateFrom').value='';
+    document.getElementById('lDateTo').value='';
+    loadLedger();
+}
 </script>
-</body>
+  </div>div><!-- /tab-inventory -->
+  <!-- ═══ LEDGER TAB ════════════════════════════════════════ -->
+<div id="tab-ledger" style="display:none">
+<div class="stats">
+  <div class="stat-card"><div class="label">Rows</div>div><div class="value" id="lTotalRows">-</div>div></div>div>
+  <div class="stat-card"><div class="label">Total Qty</div>div><div class="value" id="lTotalQty">-</div>div></div>div>
+  <div class="stat-card"><div class="label">Reconciled</div>div><div class="value" id="lTotalRec">-</div>div></div>div>
+  <div class="stat-card"><div class="label">Unreconciled</div>div><div class="value" id="lTotalUnrec">-</div>div></div>div>
+</div>div>
+<div class="filter-panel">
+  <h3>Ledger Filters</h3>
+  <div class="filter-grid">
+      <div class="fg"><label>Country</label>
+            <select id="lCountry" onchange="loadLedger()">
+                    <option value="">All Countries</option>option>
+                    <option value="US">🇺🇸 US</option>option>
+                    <option value="CA">🇨🇦 CA</option>option>
+                    <option value="MX">🇲🇽 MX</option>option>
+            </select>select>
+      </div>div>
+      <div class="fg"><label>Seller SKU</label><input id="lSku" placeholder="e.g. HB-TEA-001..." oninput="loadLedger()"></div>div>
+      <div class="fg-range">
+            <label>Date Range</label>
+            <div class="row">
+                    <input type="date" id="lDateFrom" onchange="loadLedger()">
+                    <span style="color:#aaa">–</span>span>
+                    <input type="date" id="lDateTo" onchange="loadLedger()">
+            </div>div>
+      </div>div>
+      <div class="fg" style="justify-content:flex-end">
+            <button class="btn-clear" onclick="clearLedgerFilters()">✕ Clear</button>button>
+      </div>div>
+  </div>div>
+  <div style="margin-top:10px;font-size:0.8rem;color:#666">
+      <strong>Qty by Country:</strong> <span id="lByCountry">—</span>span>
+  </div>div>
+</div>div>
+<div class="result-count" id="lResultCount"></div>div>
+<div id="lLoading" style="text-align:center;padding:40px;color:#888">Loading ledger data...</div>div>
+<div id="lTableWrap" class="container" style="display:none"><div id="lTable"></div>div></div>div>
+</div>div>
+</strong></label></label></h3></body>
 </html>
